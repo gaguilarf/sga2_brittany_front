@@ -1,78 +1,187 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./AlumnosPage.module.css";
 
 interface Alumno {
   id: string;
   nombre: string;
   dni: string;
+  email: string;
   sede: string;
   estado: "Activo" | "Inactivo" | "Egresado";
   fechaIngreso: string;
 }
 
-const MOCK_ALUMNOS: Alumno[] = [
-  {
-    id: "1",
-    nombre: "Ana García Lopez",
-    dni: "12345678A",
-    sede: "Sede Central",
-    estado: "Activo",
-    fechaIngreso: "12/01/2024",
-  },
-  {
-    id: "2",
-    nombre: "Carlos Ruiz Gomez",
-    dni: "87654321B",
-    sede: "Sede Norte",
-    estado: "Inactivo",
-    fechaIngreso: "05/02/2023",
-  },
-  {
-    id: "3",
-    nombre: "Laura Martín Díaz",
-    dni: "98765432C",
-    sede: "Sede Sur",
-    estado: "Activo",
-    fechaIngreso: "20/03/2024",
-  },
-  {
-    id: "4",
-    nombre: "Marcos Soler Peña",
-    dni: "11223344D",
-    sede: "Sede Central",
-    estado: "Egresado",
-    fechaIngreso: "15/09/2022",
-  },
-  {
-    id: "5",
-    nombre: "Sofia Navarro Gil",
-    dni: "55667788E",
-    sede: "Sede Norte",
-    estado: "Activo",
-    fechaIngreso: "01/02/2024",
-  },
-  {
-    id: "6",
-    nombre: "Daniel Vega Sanz",
-    dni: "99887766F",
-    sede: "Sede Sur",
-    estado: "Inactivo",
-    fechaIngreso: "10/11/2023",
-  },
-];
+// Generador de 150 alumnos mock
+const generateMockAlumnos = (): Alumno[] => {
+  const nombres = [
+    "Ana",
+    "Carlos",
+    "Laura",
+    "Marcos",
+    "Sofia",
+    "Daniel",
+    "Elena",
+    "Javier",
+    "Lucia",
+    "Ricardo",
+  ];
+  const apellidos = [
+    "García Lopez",
+    "Ruiz Gomez",
+    "Martín Díaz",
+    "Soler Peña",
+    "Navarro Gil",
+    "Vega Sanz",
+    "Torres Castro",
+    "Méndez Ruiz",
+    "Pérez Sosa",
+    "Luna Victoria",
+  ];
+  const sedes = ["Sede Central", "Sede Norte", "Sede Sur"];
+  const estados: Alumno["estado"][] = ["Activo", "Inactivo", "Egresado"];
+
+  return Array.from({ length: 150 }, (_, i) => {
+    const nombre = nombres[i % nombres.length];
+    const apellido = apellidos[i % apellidos.length];
+    const fullNombre = `${nombre} ${apellido} ${i > 10 ? i : ""}`;
+    return {
+      id: (i + 1).toString(),
+      nombre: fullNombre,
+      dni: `${Math.floor(
+        10000000 + Math.random() * 90000000
+      )}${String.fromCharCode(65 + (i % 26))}`,
+      email: `${nombre.toLowerCase()}.${apellido
+        .split(" ")[0]
+        .toLowerCase()}${i}@brittany.edu.pe`,
+      sede: sedes[i % sedes.length],
+      estado: estados[i % estados.length],
+      fechaIngreso: `${((i % 28) + 1).toString().padStart(2, "0")}/${(
+        (i % 12) +
+        1
+      )
+        .toString()
+        .padStart(2, "0")}/202${i % 4}`,
+    };
+  });
+};
+
+const ALL_ALUMNOS = generateMockAlumnos();
+
+type SortKey = "nombre" | "sede" | "estado" | "fechaIngreso";
 
 export default function AlumnosPage() {
+  const router = useRouter();
+
+  // States
   const [searchTerm, setSearchTerm] = useState("");
-  const [sedeFilter, setSedeFilter] = useState("Sede Central");
+  const [sedeFilter, setSedeFilter] = useState("Todas");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortConfig, setSortConfig] = useState<{
+    key: SortKey;
+    direction: "asc" | "desc";
+  } | null>({ key: "nombre", direction: "asc" });
+
+  // Filter Logic
+  const filteredAlumnos = useMemo(() => {
+    return ALL_ALUMNOS.filter((alumno) => {
+      const matchesSearch =
+        alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alumno.dni.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        alumno.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesSede = sedeFilter === "Todas" || alumno.sede === sedeFilter;
+      const matchesEstado =
+        estadoFilter === "Todos" || alumno.estado === estadoFilter;
+
+      return matchesSearch && matchesSede && matchesEstado;
+    });
+  }, [searchTerm, sedeFilter, estadoFilter]);
+
+  // Sort Logic
+  const sortedAlumnos = useMemo(() => {
+    if (!sortConfig) return filteredAlumnos;
+
+    return [...filteredAlumnos].sort((a, b) => {
+      let aValue: string = a[sortConfig.key];
+      let bValue: string = b[sortConfig.key];
+
+      // Especial para fechas (formato DD/MM/YYYY)
+      if (sortConfig.key === "fechaIngreso") {
+        const [dayA, monthA, yearA] = aValue.split("/").map(Number);
+        const [dayB, monthB, yearB] = bValue.split("/").map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA).getTime();
+        const dateB = new Date(yearB, monthB - 1, dayB).getTime();
+        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+      }
+
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredAlumnos, sortConfig]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(sortedAlumnos.length / pageSize);
+  const paginatedAlumnos = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedAlumnos.slice(start, start + pageSize);
+  }, [sortedAlumnos, currentPage, pageSize]);
+
+  const handleSort = (key: SortKey) => {
+    let direction: "asc" | "desc" = "asc";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "asc"
+    ) {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const renderSortIcon = (key: SortKey) => {
+    const isActive = sortConfig?.key === key;
+    return (
+      <svg
+        className={`${styles.sortIcon} ${isActive ? styles.activeSort : ""}`}
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {isActive && sortConfig.direction === "desc" ? (
+          <polyline points="7 10 12 5 17 10"></polyline>
+        ) : (
+          <polyline points="7 14 12 19 17 14"></polyline>
+        )}
+        {!isActive && (
+          <path d="M7 10 12 5 17 10 M7 14 12 19 17 14" opacity="0.3" />
+        )}
+      </svg>
+    );
+  };
 
   return (
     <div className={styles.alumnosContainer}>
       <header className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Lista de Alumnos</h1>
-        <button className={styles.btnNewAlumno}>
+        <button
+          className={styles.btnNewAlumno}
+          onClick={() => router.push("/admin/matriculas")}
+        >
           <svg
             width="20"
             height="20"
@@ -96,9 +205,13 @@ export default function AlumnosPage() {
             <label className={styles.filterLabel}>Sede</label>
             <select
               value={sedeFilter}
-              onChange={(e) => setSedeFilter(e.target.value)}
+              onChange={(e) => {
+                setSedeFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className={styles.select}
             >
+              <option value="Todas">Todas</option>
               <option value="Sede Central">Sede Central</option>
               <option value="Sede Norte">Sede Norte</option>
               <option value="Sede Sur">Sede Sur</option>
@@ -109,7 +222,10 @@ export default function AlumnosPage() {
             <label className={styles.filterLabel}>Estado del alumno</label>
             <select
               value={estadoFilter}
-              onChange={(e) => setEstadoFilter(e.target.value)}
+              onChange={(e) => {
+                setEstadoFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className={styles.select}
             >
               <option value="Todos">Todos</option>
@@ -137,9 +253,12 @@ export default function AlumnosPage() {
               </svg>
               <input
                 type="text"
-                placeholder="Buscar por nombre, DNI..."
+                placeholder="Buscar por nombre, DNI o email..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className={styles.searchInput}
               />
             </div>
@@ -150,33 +269,41 @@ export default function AlumnosPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>NOMBRE COMPLETO</th>
+                <th
+                  onClick={() => handleSort("nombre")}
+                  className={styles.sortableHeader}
+                >
+                  NOMBRE COMPLETO {renderSortIcon("nombre")}
+                </th>
                 <th>DNI</th>
-                <th>SEDE</th>
-                <th>ESTADO</th>
-                <th>
-                  FECHA DE INGRESO{" "}
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="7 15 12 20 17 15"></polyline>
-                    <polyline points="7 9 12 4 17 9"></polyline>
-                  </svg>
+                <th
+                  onClick={() => handleSort("sede")}
+                  className={styles.sortableHeader}
+                >
+                  SEDE {renderSortIcon("sede")}
+                </th>
+                <th
+                  onClick={() => handleSort("estado")}
+                  className={styles.sortableHeader}
+                >
+                  ESTADO {renderSortIcon("estado")}
+                </th>
+                <th
+                  onClick={() => handleSort("fechaIngreso")}
+                  className={styles.sortableHeader}
+                >
+                  FECHA DE INGRESO {renderSortIcon("fechaIngreso")}
                 </th>
                 <th>ACCIONES</th>
               </tr>
             </thead>
             <tbody>
-              {MOCK_ALUMNOS.map((alumno) => (
+              {paginatedAlumnos.map((alumno) => (
                 <tr key={alumno.id}>
-                  <td className={styles.nameCell}>{alumno.nombre}</td>
+                  <td className={styles.nameCell}>
+                    <div>{alumno.nombre}</div>
+                    <div className={styles.emailSub}>{alumno.email}</div>
+                  </td>
                   <td>{alumno.dni}</td>
                   <td>{alumno.sede}</td>
                   <td>
@@ -228,22 +355,100 @@ export default function AlumnosPage() {
                   </td>
                 </tr>
               ))}
+              {paginatedAlumnos.length === 0 && (
+                <tr>
+                  <td colSpan={6} className={styles.emptyResults}>
+                    No se encontraron alumnos que coincidan con los filtros
+                    aplicados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         <footer className={styles.tableFooter}>
-          <div className={styles.recordsInfo}>Mostrando 1-6 de 150 alumnos</div>
+          <div className={styles.footerLeft}>
+            <div className={styles.recordsInfo}>
+              Mostrando{" "}
+              {Math.min(
+                filteredAlumnos.length,
+                (currentPage - 1) * pageSize + 1
+              )}
+              –{Math.min(filteredAlumnos.length, currentPage * pageSize)} de{" "}
+              {filteredAlumnos.length} alumnos
+            </div>
+            <div className={styles.pageSizeSelector}>
+              <span>Mostrar</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
           <div className={styles.pagination}>
-            <button className={styles.pageBtn}>Anterior</button>
-            <button className={`${styles.pageBtn} ${styles.activePage}`}>
+            <button
+              className={styles.pageBtn}
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Anterior
+            </button>
+            <button
+              className={`${styles.pageBtn} ${
+                currentPage === 1 ? styles.activePage : ""
+              }`}
+              onClick={() => goToPage(1)}
+            >
               1
             </button>
-            <button className={styles.pageBtn}>2</button>
-            <button className={styles.pageBtn}>3</button>
-            <span className={styles.paginationEllipsis}>...</span>
-            <button className={styles.pageBtn}>15</button>
-            <button className={styles.pageBtn}>Siguiente</button>
+            {currentPage > 3 && (
+              <span className={styles.paginationEllipsis}>...</span>
+            )}
+            {Array.from({ length: Math.min(3, totalPages - 1) }, (_, i) => {
+              const pageNum =
+                i + Math.max(2, Math.min(currentPage - 1, totalPages - 3));
+              if (pageNum >= totalPages) return null;
+              return (
+                <button
+                  key={pageNum}
+                  className={`${styles.pageBtn} ${
+                    currentPage === pageNum ? styles.activePage : ""
+                  }`}
+                  onClick={() => goToPage(pageNum)}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            {currentPage < totalPages - 2 && (
+              <span className={styles.paginationEllipsis}>...</span>
+            )}
+            {totalPages > 1 && (
+              <button
+                className={`${styles.pageBtn} ${
+                  currentPage === totalPages ? styles.activePage : ""
+                }`}
+                onClick={() => goToPage(totalPages)}
+              >
+                {totalPages}
+              </button>
+            )}
+            <button
+              className={styles.pageBtn}
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+            >
+              Siguiente
+            </button>
           </div>
         </footer>
       </section>
