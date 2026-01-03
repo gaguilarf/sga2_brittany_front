@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import styles from "./HeaderAdmin.module.css";
 
 interface HeaderAdminProps {
@@ -57,9 +58,13 @@ export default function HeaderAdmin({
           {/* Navigation Menu (Desktop) */}
           <nav className={styles.nav}>
             {menuItems.map((item) => (
-              <a key={item.label} href={item.href} className={styles.navLink}>
+              <Link
+                key={item.label}
+                href={item.href}
+                className={styles.navLink}
+              >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -169,7 +174,7 @@ export default function HeaderAdmin({
               {/* User Menu Dropdown */}
               {showUserMenu && (
                 <div className={styles.userDropdown}>
-                  <a href="/admin/perfil" className={styles.dropdownItem}>
+                  <Link href="/admin/perfil" className={styles.dropdownItem}>
                     <svg
                       fill="none"
                       stroke="currentColor"
@@ -184,8 +189,8 @@ export default function HeaderAdmin({
                       />
                     </svg>
                     Mi Perfil
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/admin/configuracion"
                     className={styles.dropdownItem}
                   >
@@ -209,7 +214,7 @@ export default function HeaderAdmin({
                       />
                     </svg>
                     Configuración
-                  </a>
+                  </Link>
                   <div className={styles.dropdownDivider}></div>
                   <button
                     onClick={handleLogout}
@@ -244,7 +249,7 @@ export default function HeaderAdmin({
         }`}
       >
         {menuItems.map((item) => (
-          <a
+          <Link
             key={item.label}
             href={item.href}
             className={styles.mobileNavLink}
@@ -252,7 +257,7 @@ export default function HeaderAdmin({
           >
             <span className={styles.mobileNavIcon}>{item.icon}</span>
             {item.label}
-          </a>
+          </Link>
         ))}
       </div>
     </header>
