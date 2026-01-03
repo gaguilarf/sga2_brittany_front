@@ -14,8 +14,8 @@ interface HeaderAdminProps {
 }
 
 export default function HeaderAdmin({
-  adminName = "Carlos Ruiz",
-  adminRole = "Admin",
+  adminName = "",
+  adminRole = "",
   notificationCount = 0,
   hideLogo = false,
 }: HeaderAdminProps) {
@@ -157,8 +157,12 @@ export default function HeaderAdmin({
                   <span>{adminName.charAt(0)}</span>
                 </div>
                 <div className={styles.userInfo}>
-                  <span className={styles.userRole}>{adminRole}:</span>
-                  <span className={styles.userName}>{adminName}</span>
+                  <span className={styles.userRole} suppressHydrationWarning>
+                    {adminRole}:
+                  </span>
+                  <span className={styles.userName} suppressHydrationWarning>
+                    {adminName}
+                  </span>
                 </div>
                 <svg
                   className={styles.chevronIcon}
@@ -219,6 +223,24 @@ export default function HeaderAdmin({
                       />
                     </svg>
                     Configuración
+                  </Link>
+                  <Link href="/admin/ayuda" className={styles.dropdownItem}>
+                    <svg
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"
+                      />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    Ayuda
                   </Link>
                   <div className={styles.dropdownDivider}></div>
                   <button

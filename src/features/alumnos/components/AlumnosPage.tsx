@@ -51,9 +51,7 @@ const generateMockAlumnos = (): Alumno[] => {
     return {
       id: (i + 1).toString(),
       nombre: fullNombre,
-      dni: `${Math.floor(
-        10000000 + Math.random() * 90000000
-      )}${String.fromCharCode(65 + (i % 26))}`,
+      dni: `${(12345678 + i).toString()}${String.fromCharCode(65 + (i % 26))}`,
       email: `${nombre.toLowerCase()}.${apellido
         .split(" ")[0]
         .toLowerCase()}${i}@brittany.edu.pe`,

@@ -22,30 +22,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
 
+  // Load from localStorage on initialization
+  useEffect(() => {
+    const savedUser = localStorage.getItem("auth_user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem("auth_user");
+      }
+    }
+    checkSession();
+  }, []);
+
   const checkSession = async () => {
-    setIsLoading(true);
+    // Only set loading if we don't have a cached user to avoid jumping
+    const hasCachedUser = !!localStorage.getItem("auth_user");
+    if (!hasCachedUser) setIsLoading(true);
+
     try {
       const userData = await AuthController.checkSession();
       setUser(userData);
+      if (userData) {
+        localStorage.setItem("auth_user", JSON.stringify(userData));
+      } else {
+        localStorage.removeItem("auth_user");
+      }
     } catch (error) {
       setUser(null);
+      localStorage.removeItem("auth_user");
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    checkSession();
-  }, []);
-
   const login = (userData: User) => {
     setUser(userData);
+    localStorage.setItem("auth_user", JSON.stringify(userData));
   };
 
   const logout = async () => {
     const result = await AuthController.logout();
     if (result.success) {
       setUser(null);
+      localStorage.removeItem("auth_user");
       router.push("/login");
     }
   };

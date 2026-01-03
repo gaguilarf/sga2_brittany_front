@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HeaderAdmin, Sidebar } from "@/shared";
+import { useAuth } from "@/shared/contexts/AuthContext";
 import styles from "./layout.module.css";
 
 export default function AdminLayout({
@@ -9,7 +10,13 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <div className={styles.dashboardContainer}>
@@ -21,8 +28,8 @@ export default function AdminLayout({
         }`}
       >
         <HeaderAdmin
-          adminName="Carlos Ruiz"
-          adminRole="Admin"
+          adminName={user?.fullname || "Usuario"}
+          adminRole={user?.roleName || "Admin"}
           notificationCount={3}
           hideLogo={!isSidebarCollapsed}
         />
