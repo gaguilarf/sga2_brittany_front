@@ -318,26 +318,34 @@ export default function AlumnosPage() {
                   onClick={() => handleSort("nombre")}
                   className={styles.sortableHeader}
                 >
-                  NOMBRE COMPLETO {renderSortIcon("nombre")}
+                  <div className={styles.headerContent}>
+                    NOMBRE COMPLETO{renderSortIcon("nombre")}
+                  </div>
                 </th>
                 <th>DNI</th>
                 <th
                   onClick={() => handleSort("sede")}
                   className={styles.sortableHeader}
                 >
-                  SEDE {renderSortIcon("sede")}
+                  <div className={styles.headerContent}>
+                    SEDE{renderSortIcon("sede")}
+                  </div>
                 </th>
                 <th
                   onClick={() => handleSort("estado")}
                   className={styles.sortableHeader}
                 >
-                  ESTADO {renderSortIcon("estado")}
+                  <div className={styles.headerContent}>
+                    ESTADO{renderSortIcon("estado")}
+                  </div>
                 </th>
                 <th
                   onClick={() => handleSort("fechaIngreso")}
                   className={styles.sortableHeader}
                 >
-                  FECHA DE INGRESO {renderSortIcon("fechaIngreso")}
+                  <div className={styles.headerContent}>
+                    FECHA DE INGRESO{renderSortIcon("fechaIngreso")}
+                  </div>
                 </th>
                 <th>ACCIONES</th>
               </tr>
