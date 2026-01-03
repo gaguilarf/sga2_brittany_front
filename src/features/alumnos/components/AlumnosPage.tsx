@@ -3,8 +3,9 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./AlumnosPage.module.css";
+import AlumnoDetalle from "./AlumnoDetalle";
 
-interface Alumno {
+export interface Alumno {
   id: string;
   nombre: string;
   dni: string;
@@ -90,6 +91,10 @@ export default function AlumnosPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Alumno | null>(null);
 
+  // View state: list or detail
+  const [viewMode, setViewMode] = useState<"list" | "detail">("list");
+  const [selectedAlumno, setSelectedAlumno] = useState<Alumno | null>(null);
+
   // Filter Logic
   const filteredAlumnos = useMemo(() => {
     return alumnos.filter((alumno) => {
@@ -171,16 +176,25 @@ export default function AlumnosPage() {
   const handleEditChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
+    if (!editForm) return;
     const { name, value } = e.target;
-    if (editForm) {
-      if (name === "fechaIngreso") {
-        // Convertir YYYY-MM-DD a DD/MM/YYYY
-        const [year, month, day] = value.split("-");
-        setEditForm({ ...editForm, [name]: `${day}/${month}/${year}` });
-      } else {
-        setEditForm({ ...editForm, [name]: value });
-      }
+    if (name === "fechaIngreso") {
+      // Convertir YYYY-MM-DD a DD/MM/YYYY
+      const [year, month, day] = value.split("-");
+      setEditForm({ ...editForm, [name]: `${day}/${month}/${year}` });
+    } else {
+      setEditForm({ ...editForm, [name]: value });
     }
+  };
+
+  const handleSeeDetails = (alumno: Alumno) => {
+    setSelectedAlumno(alumno);
+    setViewMode("detail");
+  };
+
+  const handleBackToList = () => {
+    setViewMode("list");
+    setSelectedAlumno(null);
   };
 
   // Helper para convertir DD/MM/YYYY a YYYY-MM-DD para el input date
@@ -218,6 +232,10 @@ export default function AlumnosPage() {
       </svg>
     );
   };
+
+  if (viewMode === "detail" && selectedAlumno) {
+    return <AlumnoDetalle alumno={selectedAlumno} onBack={handleBackToList} />;
+  }
 
   return (
     <div className={styles.alumnosContainer}>
@@ -503,7 +521,10 @@ export default function AlumnosPage() {
                               </svg>
                               Editar
                             </button>
-                            <button className={styles.btnDetails}>
+                            <button
+                              className={styles.btnDetails}
+                              onClick={() => handleSeeDetails(alumno)}
+                            >
                               <svg
                                 width="14"
                                 height="14"
