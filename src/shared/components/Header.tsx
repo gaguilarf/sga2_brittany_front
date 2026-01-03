@@ -58,10 +58,10 @@ export default function Header() {
             </a>
 
             <a
-              href="/dashboard"
-              className={`btn btn-small btn-primary ${styles.whatsappBtn}`}
+              href="/login"
+              className={`btn btn-small btn-primary ${styles.loginBtn}`}
             >
-              Hablar por WhatsApp
+              Iniciar Sesión
             </a>
           </nav>
         </div>
