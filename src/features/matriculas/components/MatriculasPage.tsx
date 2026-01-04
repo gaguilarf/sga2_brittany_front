@@ -12,6 +12,7 @@ export default function MatriculasPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Static data
   const [campuses, setCampuses] = useState<Campus[]>([]);
@@ -75,6 +76,13 @@ export default function MatriculasPage() {
     >
   ) => {
     const { name, value } = e.target;
+
+    // Clear field-specific error when user types
+    if (errors[name]) {
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
+    }
 
     if (name === "fechaNacimiento") {
       const birthDate = new Date(value);
@@ -157,24 +165,54 @@ export default function MatriculasPage() {
   };
 
   const validateStep = (step: number): boolean => {
-    setError(null);
-    if (!canAdvance(step)) {
-      if (step === 1) {
-        if (!formData.nombre) setError("El nombre completo es obligatorio.");
-        else if (!formData.dni) setError("El DNI es obligatorio.");
-        else if (formData.dni.length < 8)
-          setError("El DNI debe tener al menos 8 caracteres.");
-        else if (!formData.distrito) setError("Seleccione un distrito.");
-        else if (!formData.edad) setError("La edad es obligatoria.");
-        else if (!formData.celularApoderado)
-          setError("El celular del apoderado es obligatorio.");
-      } else if (step === 2) {
-        setError("Complete todos los campos obligatorios de configuración.");
-      } else if (step === 3) {
-        setError("El ID del asesor es obligatorio.");
-      }
+    const newErrors: Record<string, string> = {};
+
+    if (step === 1) {
+      if (!formData.nombre)
+        newErrors.nombre = "El nombre completo es obligatorio.";
+      if (!formData.dni) newErrors.dni = "El DNI es obligatorio.";
+      else if (formData.dni.length < 8) newErrors.dni = "Mínimo 8 caracteres.";
+      if (!formData.fechaNacimiento)
+        newErrors.fechaNacimiento = "Fecha obligatoria.";
+      if (!formData.edad) newErrors.edad = "La edad es obligatoria.";
+      if (!formData.distrito)
+        newErrors.distrito = "El distrito es obligatorio.";
+      if (!formData.celularApoderado)
+        newErrors.celularApoderado = "Celular apoderado obligatorio.";
+    }
+
+    if (step === 2) {
+      if (!formData.campusId) newErrors.campusId = "Debe seleccionar una sede.";
+      if (!formData.planId) newErrors.planId = "Debe seleccionar un plan.";
+      if (!formData.modalidad)
+        newErrors.modalidad = "La modalidad es obligatoria.";
+      if (!formData.nivel) newErrors.nivel = "El nivel es obligatorio.";
+      if (!formData.tipoInscripcion)
+        newErrors.tipoInscripcion = "Tipo de inscripción obligatorio.";
+      if (!formData.diaClase)
+        newErrors.diaClase = "Días de clase obligatorios.";
+      if (!formData.horaInicio)
+        newErrors.horaInicio = "Hora inicio obligatoria.";
+      if (!formData.horaFin) newErrors.horaFin = "Hora fin obligatoria.";
+    }
+
+    if (step === 3) {
+      if (!formData.advisorId)
+        newErrors.advisorId = "ID de asesor obligatorio.";
+      if (!formData.origen) newErrors.origen = "Origen obligatorio.";
+      if (!formData.numeroBoleta)
+        newErrors.numeroBoleta = "Nro. de boleta obligatorio.";
+      // saldo is 0 by default, so it's "filled"
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      setError("Por favor, completa los campos obligatorios indicados.");
       return false;
     }
+
+    setError(null);
     return true;
   };
 
@@ -299,13 +337,20 @@ export default function MatriculasPage() {
                           onChange={handleInputChange}
                           type="text"
                           placeholder=" "
-                          className={styles.input}
+                          className={`${styles.input} ${
+                            errors.nombre ? styles.invalid : ""
+                          }`}
                           required
                         />
                         <label htmlFor="nombre" className={styles.label}>
                           Nombre Completo{" "}
                           <span className={styles.required}>*</span>
                         </label>
+                        {errors.nombre && (
+                          <span className={styles.errorText}>
+                            {errors.nombre}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -319,13 +364,18 @@ export default function MatriculasPage() {
                           onChange={handleInputChange}
                           type="text"
                           placeholder=" "
-                          className={styles.input}
+                          className={`${styles.input} ${
+                            errors.dni ? styles.invalid : ""
+                          }`}
                           required
                         />
                         <label htmlFor="dni" className={styles.label}>
                           DNI / Documento{" "}
                           <span className={styles.required}>*</span>
                         </label>
+                        {errors.dni && (
+                          <span className={styles.errorText}>{errors.dni}</span>
+                        )}
                         <button
                           type="button"
                           className={styles.searchBtn}
@@ -347,7 +397,9 @@ export default function MatriculasPage() {
                           value={formData.fechaNacimiento}
                           onChange={handleInputChange}
                           type="date"
-                          className={styles.input}
+                          className={`${styles.input} ${
+                            errors.fechaNacimiento ? styles.invalid : ""
+                          }`}
                           required
                         />
                         <label
@@ -357,6 +409,11 @@ export default function MatriculasPage() {
                           Fecha de Nacimiento{" "}
                           <span className={styles.required}>*</span>
                         </label>
+                        {errors.fechaNacimiento && (
+                          <span className={styles.errorText}>
+                            {errors.fechaNacimiento}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -370,13 +427,20 @@ export default function MatriculasPage() {
                           onChange={handleInputChange}
                           type="number"
                           placeholder=" "
-                          className={styles.input}
+                          className={`${styles.input} ${
+                            errors.edad ? styles.invalid : ""
+                          }`}
                           required
                           readOnly={!!formData.fechaNacimiento}
                         />
                         <label htmlFor="edad" className={styles.label}>
                           Edad <span className={styles.required}>*</span>
                         </label>
+                        {errors.edad && (
+                          <span className={styles.errorText}>
+                            {errors.edad}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className={styles.formGroup}>
@@ -388,12 +452,19 @@ export default function MatriculasPage() {
                           onChange={handleInputChange}
                           type="text"
                           placeholder=" "
-                          className={styles.input}
+                          className={`${styles.input} ${
+                            errors.distrito ? styles.invalid : ""
+                          }`}
                           required
                         />
                         <label htmlFor="distrito" className={styles.label}>
                           Distrito <span className={styles.required}>*</span>
                         </label>
+                        {errors.distrito && (
+                          <span className={styles.errorText}>
+                            {errors.distrito}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -433,14 +504,23 @@ export default function MatriculasPage() {
                         onChange={handleInputChange}
                         type="text"
                         placeholder=" "
-                        className={styles.input}
+                        className={`${styles.input} ${
+                          errors.celularApoderado ? styles.invalid : ""
+                        }`}
+                        required
                       />
                       <label
                         htmlFor="celularApoderado"
                         className={styles.label}
                       >
-                        Celular del Apoderado
+                        Celular del Apoderado{" "}
+                        <span className={styles.required}>*</span>
                       </label>
+                      {errors.celularApoderado && (
+                        <span className={styles.errorText}>
+                          {errors.celularApoderado}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className={styles.formGroup}>
@@ -485,7 +565,9 @@ export default function MatriculasPage() {
                         id="campusId"
                         value={formData.campusId}
                         onChange={handleInputChange}
-                        className={styles.select}
+                        className={`${styles.select} ${
+                          errors.campusId ? styles.invalid : ""
+                        }`}
                         required
                       >
                         <option value="" disabled hidden>
@@ -500,6 +582,11 @@ export default function MatriculasPage() {
                       <label htmlFor="campusId" className={styles.label}>
                         Sede <span className={styles.required}>*</span>
                       </label>
+                      {errors.campusId && (
+                        <span className={styles.errorText}>
+                          {errors.campusId}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className={styles.formGroup}>
@@ -509,7 +596,9 @@ export default function MatriculasPage() {
                         id="planId"
                         value={formData.planId}
                         onChange={handleInputChange}
-                        className={styles.select}
+                        className={`${styles.select} ${
+                          errors.planId ? styles.invalid : ""
+                        }`}
                         required
                       >
                         <option value="" disabled hidden>
@@ -526,6 +615,11 @@ export default function MatriculasPage() {
                         Plan Comercial{" "}
                         <span className={styles.required}>*</span>
                       </label>
+                      {errors.planId && (
+                        <span className={styles.errorText}>
+                          {errors.planId}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className={styles.formGroup}>
@@ -555,12 +649,17 @@ export default function MatriculasPage() {
                         onChange={handleInputChange}
                         type="text"
                         placeholder="Ej. Básico A1"
-                        className={styles.input}
+                        className={`${styles.input} ${
+                          errors.nivel ? styles.invalid : ""
+                        }`}
                         required
                       />
                       <label htmlFor="nivel" className={styles.label}>
                         Nivel / Ciclo <span className={styles.required}>*</span>
                       </label>
+                      {errors.nivel && (
+                        <span className={styles.errorText}>{errors.nivel}</span>
+                      )}
                     </div>
                   </div>
                   <div className={styles.formGroup}>
@@ -570,7 +669,9 @@ export default function MatriculasPage() {
                         id="tipoInscripcion"
                         value={formData.tipoInscripcion}
                         onChange={handleInputChange}
-                        className={styles.select}
+                        className={`${styles.select} ${
+                          errors.tipoInscripcion ? styles.invalid : ""
+                        }`}
                         required
                       >
                         <option value="" disabled hidden>
@@ -583,6 +684,11 @@ export default function MatriculasPage() {
                         Tipo de Inscripción{" "}
                         <span className={styles.required}>*</span>
                       </label>
+                      {errors.tipoInscripcion && (
+                        <span className={styles.errorText}>
+                          {errors.tipoInscripcion}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -603,11 +709,19 @@ export default function MatriculasPage() {
                         onChange={handleInputChange}
                         type="text"
                         placeholder="Ej. Lun-Mie-Vie"
-                        className={styles.input}
+                        className={`${styles.input} ${
+                          errors.diaClase ? styles.invalid : ""
+                        }`}
+                        required
                       />
                       <label htmlFor="diaClase" className={styles.label}>
-                        Días de clase
+                        Días de clase <span className={styles.required}>*</span>
                       </label>
+                      {errors.diaClase && (
+                        <span className={styles.errorText}>
+                          {errors.diaClase}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className={styles.row}>
@@ -618,7 +732,10 @@ export default function MatriculasPage() {
                           id="horaInicio"
                           value={formData.horaInicio}
                           onChange={handleInputChange}
-                          className={styles.select}
+                          className={`${styles.select} ${
+                            errors.horaInicio ? styles.invalid : ""
+                          }`}
+                          required
                         >
                           <option value="">--:--</option>
                           {timeOptions.map((t) => (
@@ -628,8 +745,13 @@ export default function MatriculasPage() {
                           ))}
                         </select>
                         <label htmlFor="horaInicio" className={styles.label}>
-                          Inicio
+                          Inicio <span className={styles.required}>*</span>
                         </label>
+                        {errors.horaInicio && (
+                          <span className={styles.errorText}>
+                            {errors.horaInicio}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className={styles.formGroup}>
@@ -639,7 +761,10 @@ export default function MatriculasPage() {
                           id="horaFin"
                           value={formData.horaFin}
                           onChange={handleInputChange}
-                          className={styles.select}
+                          className={`${styles.select} ${
+                            errors.horaFin ? styles.invalid : ""
+                          }`}
+                          required
                         >
                           <option value="">--:--</option>
                           {timeOptions.map((t) => (
@@ -649,8 +774,13 @@ export default function MatriculasPage() {
                           ))}
                         </select>
                         <label htmlFor="horaFin" className={styles.label}>
-                          Fin
+                          Fin <span className={styles.required}>*</span>
                         </label>
+                        {errors.horaFin && (
+                          <span className={styles.errorText}>
+                            {errors.horaFin}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -677,13 +807,20 @@ export default function MatriculasPage() {
                         onChange={handleInputChange}
                         type="number"
                         placeholder="ID del asesor"
-                        className={styles.input}
+                        className={`${styles.input} ${
+                          errors.advisorId ? styles.invalid : ""
+                        }`}
                         required
                       />
                       <label htmlFor="advisorId" className={styles.label}>
                         ID Asesor Comercial{" "}
                         <span className={styles.required}>*</span>
                       </label>
+                      {errors.advisorId && (
+                        <span className={styles.errorText}>
+                          {errors.advisorId}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className={styles.formGroup}>
@@ -693,7 +830,10 @@ export default function MatriculasPage() {
                         id="origen"
                         value={formData.origen}
                         onChange={handleInputChange}
-                        className={styles.select}
+                        className={`${styles.select} ${
+                          errors.origen ? styles.invalid : ""
+                        }`}
+                        required
                       >
                         <option value="">Seleccione origen</option>
                         <option value="Facebook">Facebook</option>
@@ -703,8 +843,14 @@ export default function MatriculasPage() {
                         <option value="Otro">Otro</option>
                       </select>
                       <label htmlFor="origen" className={styles.label}>
-                        Origen del Lead
+                        Origen del Lead{" "}
+                        <span className={styles.required}>*</span>
                       </label>
+                      {errors.origen && (
+                        <span className={styles.errorText}>
+                          {errors.origen}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -725,11 +871,20 @@ export default function MatriculasPage() {
                         onChange={handleInputChange}
                         type="text"
                         placeholder="Nro. Boleta/Recibo"
-                        className={styles.input}
+                        className={`${styles.input} ${
+                          errors.numeroBoleta ? styles.invalid : ""
+                        }`}
+                        required
                       />
                       <label htmlFor="numeroBoleta" className={styles.label}>
-                        Nro. de Boleta
+                        Nro. de Boleta{" "}
+                        <span className={styles.required}>*</span>
                       </label>
+                      {errors.numeroBoleta && (
+                        <span className={styles.errorText}>
+                          {errors.numeroBoleta}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className={styles.formGroup}>
@@ -840,7 +995,7 @@ export default function MatriculasPage() {
               <button
                 className={styles.btnNext}
                 onClick={nextStep}
-                disabled={loading || !canAdvance(currentStep)}
+                disabled={loading}
               >
                 Siguiente
                 <svg
