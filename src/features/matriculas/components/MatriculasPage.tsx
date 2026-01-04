@@ -20,6 +20,9 @@ export default function MatriculasPage() {
     formData,
     handleInputChange,
     handleSearchStudent,
+    addPayment,
+    removePayment,
+    handlePaymentChange,
     nextStep,
     prevStep,
     handleFinalAction,
@@ -103,6 +106,9 @@ export default function MatriculasPage() {
             formData={formData}
             errors={errors}
             handleChange={handleInputChange}
+            handlePaymentChange={handlePaymentChange}
+            addPayment={addPayment}
+            removePayment={removePayment}
           />
         )}
 

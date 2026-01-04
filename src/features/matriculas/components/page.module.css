@@ -433,6 +433,138 @@
   box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);
 }
 
+/* Payment Step Multi-payment additions */
+.columnFull {
+  grid-column: 1 / -1;
+}
+
+.rowFull {
+  width: 100%;
+}
+
+.divider {
+  height: 1px;
+  background: var(--color-gray-100);
+  margin: 1rem 0;
+}
+
+.paymentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sectionSubHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sectionSubHeader h4 {
+  font-size: 1.1rem;
+  color: var(--color-gray-700);
+  margin: 0;
+}
+
+.paymentItemCard {
+  background: var(--color-gray-50);
+  border: 1px dashed var(--color-gray-300);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  position: relative;
+  transition: all var(--transition-fast);
+}
+
+.paymentItemCard:hover {
+  border-color: var(--color-blue-primary);
+  background: var(--color-blue-50);
+}
+
+.paymentItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.paymentItemHeader h5 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-blue-primary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.removeBtn {
+  background: var(--color-white);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-light);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all var(--transition-fast);
+}
+
+.removeBtn:hover {
+  background: var(--color-error);
+  color: var(--color-white);
+  transform: rotate(90deg);
+}
+
+.paymentRow {
+  display: grid;
+  grid-template-columns: 1.5fr 1.5fr 1fr;
+  gap: 1rem;
+}
+
+.labelFloating {
+  position: absolute;
+  left: 0.8rem;
+  top: -0.6rem;
+  padding: 0 0.4rem;
+  font-weight: 700;
+  color: var(--color-orange-primary);
+  font-size: 0.85rem;
+  background-color: var(--color-gray-50); /* Match card bg */
+  z-index: 5;
+}
+
+.paymentItemCard:hover .labelFloating {
+  background-color: var(--color-blue-50);
+}
+
+.addPaymentBtn {
+  align-self: flex-start;
+  background: var(--color-white);
+  color: var(--color-blue-primary);
+  border: 1.5px solid var(--color-blue-primary);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.addPaymentBtn:hover:not(:disabled) {
+  background: var(--color-blue-primary);
+  color: var(--color-white);
+}
+
+.addPaymentBtn:disabled {
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
 /* Responsive adjustment */
 @media (max-width: 1024px) {
   .formGrid {
@@ -443,6 +575,11 @@
 @media (max-width: 768px) {
   .row {
     grid-template-columns: 1fr;
+  }
+
+  .paymentRow {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
   .stepper {

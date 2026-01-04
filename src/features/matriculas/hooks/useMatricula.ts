@@ -42,10 +42,12 @@ export const useMatricula = () => {
     nivel: "",
     tipoInscripcion: "",
 
-    // Step 4: Pago
-    monto: "",
-    tipoPago: "",
-    metodoPago: "",
+    // Step 4: Pago (múltiples pagos)
+    payments: [{ tipo: "", metodo: "", monto: "" }] as Array<{
+      tipo: string;
+      metodo: string;
+      monto: string;
+    }>,
     numeroBoleta: "",
 
     // UI states
@@ -145,6 +147,40 @@ export const useMatricula = () => {
     }
   };
 
+  // Payment management functions
+  const addPayment = () => {
+    setFormData((prev) => ({
+      ...prev,
+      payments: [...prev.payments, { tipo: "", metodo: "", monto: "" }],
+    }));
+  };
+
+  const removePayment = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      payments: prev.payments.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handlePaymentChange = (index: number, field: string, value: string) => {
+    setFormData((prev) => {
+      const updatedPayments = [...prev.payments];
+      updatedPayments[index] = {
+        ...updatedPayments[index],
+        [field]: value,
+      };
+      return { ...prev, payments: updatedPayments };
+    });
+
+    // Clear error for this specific payment field
+    const errorKey = `payment_${index}_${field}`;
+    if (errors[errorKey]) {
+      const newErrors = { ...errors };
+      delete newErrors[errorKey];
+      setErrors(newErrors);
+    }
+  };
+
   const validateStep = async (step: number): Promise<boolean> => {
     const newErrors: Record<string, string> = {};
 
@@ -202,11 +238,37 @@ export const useMatricula = () => {
     }
 
     if (step === 3) {
-      if (!formData.monto) newErrors.monto = "El monto es obligatorio.";
-      if (!formData.tipoPago) newErrors.tipoPago = "Seleccione tipo de pago.";
-      if (!formData.metodoPago) newErrors.metodoPago = "Seleccione método.";
+      // Validar número de boleta (compartido)
       if (!formData.numeroBoleta)
         newErrors.numeroBoleta = "Nro. de boleta obligatorio.";
+
+      // Validar que haya al menos un pago
+      if (!formData.payments || formData.payments.length === 0) {
+        newErrors.payments = "Debe agregar al menos un pago.";
+      } else {
+        // Validar cada pago
+        const paymentTypes = new Set<string>();
+
+        formData.payments.forEach((payment, index) => {
+          if (!payment.tipo) {
+            newErrors[`payment_${index}_tipo`] = "Tipo obligatorio.";
+          } else {
+            // Validar tipos únicos
+            if (paymentTypes.has(payment.tipo)) {
+              newErrors[`payment_${index}_tipo`] = "Tipo de pago duplicado.";
+            }
+            paymentTypes.add(payment.tipo);
+          }
+
+          if (!payment.metodo) {
+            newErrors[`payment_${index}_metodo`] = "Método obligatorio.";
+          }
+
+          if (!payment.monto || Number(payment.monto) <= 0) {
+            newErrors[`payment_${index}_monto`] = "Monto inválido.";
+          }
+        });
+      }
     }
 
     setErrors(newErrors);
@@ -275,37 +337,40 @@ export const useMatricula = () => {
         saldo: 0,
       });
 
-      // 3. Create Payment
+      // 3. Create Payments
       const now = new Date();
-      // Remove milliseconds by splitting at period and appending Z
       const isoDate = now.toISOString().split(".")[0] + "Z";
 
-      const paymentPayload = {
-        enrollmentId: enrollment.id,
-        monto: Number(formData.monto),
-        tipo: formData.tipoPago,
-        metodo: formData.metodoPago,
-        numeroBoleta: formData.numeroBoleta,
-        fechaPago: isoDate,
-        campusId: enrollment.campusId,
-      };
+      // Create a promise for each payment
+      const paymentPromises = formData.payments.map((payment) => {
+        const paymentPayload = {
+          enrollmentId: enrollment.id,
+          monto: Number(payment.monto),
+          tipo: payment.tipo,
+          metodo: payment.metodo,
+          numeroBoleta: formData.numeroBoleta,
+          fechaPago: isoDate,
+          campusId: enrollment.campusId,
+        };
+        console.log("Sending Payment Payload:", paymentPayload);
+        return PaymentService.create(paymentPayload);
+      });
 
-      console.log("Sending Payment Payload:", paymentPayload);
+      // Wait for all payments to be created
+      await Promise.all(paymentPromises);
 
-      await PaymentService.create(paymentPayload);
-
-      setSuccess("¡Matrícula y Pago registrados con éxito!");
+      setSuccess("¡Matrícula y Pagos registrados con éxito!");
 
       // Redirect after delay
       setTimeout(() => {
         window.location.href = "/admin/dashboard";
-      }, 1000); // 3 seconds delay for user to read the message
+      }, 1000);
     } catch (err: any) {
       console.error(err);
       let message =
         err.response?.data?.message ||
         err.message ||
-        "Error al registrar la matrícula o el pago";
+        "Error al registrar la matrícula o los pagos";
 
       if (Array.isArray(message)) {
         message = message.join(", ");
@@ -329,6 +394,9 @@ export const useMatricula = () => {
     formData,
     handleInputChange,
     handleSearchStudent,
+    addPayment,
+    removePayment,
+    handlePaymentChange,
     nextStep,
     prevStep,
     handleFinalAction,
