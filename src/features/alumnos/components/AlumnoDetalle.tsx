@@ -67,49 +67,16 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
       };
       setAlumno(updatedAlumno);
 
-      let enrollments: EnrollmentResponse[] = [];
-      try {
-        enrollments = await EnrollmentService.getByStudentId(
-          parseInt(alumno.id)
-        );
-      } catch (e: any) {
-        if (e.statusCode === 404) {
-          console.warn(
-            "Direct student enrollment endpoint not found, falling back to getAll"
-          );
-          const allEnrollments = await EnrollmentService.getAll();
-          enrollments = allEnrollments.filter(
-            (e) => e.studentId === parseInt(alumno.id)
-          );
-        } else {
-          throw e;
-        }
-      }
+      const enrollments = await EnrollmentService.getByStudentId(
+        parseInt(alumno.id)
+      );
 
       if (enrollments.length > 0) {
         const activeEnrollment = enrollments[enrollments.length - 1]; // Use latest
         setEnrollment(activeEnrollment);
 
-        let paymentsData: PaymentResponse[] = [];
-        try {
-          paymentsData = await PaymentService.getByEnrollmentId(
-            activeEnrollment.id
-          );
-        } catch (e: any) {
-          if (e.statusCode === 404) {
-            console.warn(
-              "Direct enrollment payments endpoint not found, falling back to getAll"
-            );
-            const allPayments = await PaymentService.getAll();
-            paymentsData = allPayments.filter(
-              (p) => p.enrollmentId === activeEnrollment.id
-            );
-          } else {
-            throw e;
-          }
-        }
-
-        const [campuses, plans] = await Promise.all([
+        const [paymentsData, campuses, plans] = await Promise.all([
+          PaymentService.getByEnrollmentId(activeEnrollment.id),
           CampusService.getAll(),
           PlanService.getAll(),
         ]);
@@ -125,15 +92,10 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
           )
         );
       }
+      return updatedAlumno;
     } catch (error: any) {
       console.error("Error fetching student details. Full error:", error);
-      const errorMsg =
-        error.message ||
-        (typeof error === "string"
-          ? error
-          : JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      // No alert here to avoid spamming the user if they're just browsing,
-      // but log it properly for diagnostics.
+      return null;
     } finally {
       setLoadingDetails(false);
     }
@@ -188,8 +150,12 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
         <div className={styles.headerTitleArea}>
           <h1>
             Detalle del Alumno
-            <span className={`${styles.statusBadge} ${styles.activo}`}>
-              Activo
+            <span
+              className={`${styles.statusBadge} ${
+                alumno.estado === "Activo" ? styles.activo : styles.inactivo
+              }`}
+            >
+              {alumno.estado}
             </span>
           </h1>
           <p className={styles.subtitle}>
@@ -370,6 +336,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
                       fechaNacimiento: editForm.fechaNacimiento || undefined,
                       celularApoderado:
                         editForm.celularApoderado.trim() || undefined,
+                      active: editForm.active,
                     };
 
                     const updated = await StudentService.update(
@@ -378,7 +345,12 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
                     );
 
                     // Refresh data after update
-                    await fetchStudentDetails();
+                    const freshData = await fetchStudentDetails();
+
+                    // If we have an onUpdate callback, ||||notify the parent list
+                    if (onUpdate && freshData) {
+                      onUpdate(freshData);
+                    }
 
                     setIsModalOpen(false);
                   } catch (error: any) {

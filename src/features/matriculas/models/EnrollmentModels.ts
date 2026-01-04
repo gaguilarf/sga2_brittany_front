@@ -33,6 +33,7 @@ export interface UpdateStudentDto {
   celularAlumno?: string;
   celularApoderado?: string;
   correo?: string;
+  active?: boolean;
 }
 
 export interface Campus {

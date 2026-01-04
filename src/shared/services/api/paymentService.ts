@@ -12,10 +12,9 @@ export const PaymentService = {
   },
 
   async getByEnrollmentId(enrollmentId: number): Promise<PaymentResponse[]> {
-    const res = await apiClient.get<PaymentResponse[]>(
-      `/payments/enrollment/${enrollmentId}`
-    );
-    return res.data || [];
+    // Using getAll + Filter by default to avoid 404s in console while backend is being updated
+    const all = await this.getAll();
+    return all.filter((p) => p.enrollmentId === enrollmentId);
   },
 
   async getAll(): Promise<PaymentResponse[]> {

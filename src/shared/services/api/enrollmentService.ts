@@ -12,10 +12,9 @@ export const EnrollmentService = {
   },
 
   async getByStudentId(studentId: number): Promise<EnrollmentResponse[]> {
-    const res = await apiClient.get<EnrollmentResponse[]>(
-      `/enrollments/student/${studentId}`
-    );
-    return res.data || [];
+    // Using getAll + Filter by default to avoid 404s in console while backend is being updated
+    const all = await this.getAll();
+    return all.filter((e) => e.studentId === studentId);
   },
 
   async getAll(): Promise<EnrollmentResponse[]> {

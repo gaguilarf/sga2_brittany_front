@@ -63,6 +63,11 @@
   color: #16a34a;
 }
 
+.inactivo {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
 .subtitle {
   color: var(--color-gray-400);
   font-size: 0.95rem;

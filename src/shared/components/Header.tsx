@@ -7,21 +7,6 @@ import styles from "./Header.module.css";
 
 export default function Header() {
   const router = useRouter();
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Inicia el contador (ej. 3 segundos para que sea realmente secreto)
-  const startPress = () => {
-    timerRef.current = setTimeout(() => {
-      router.push("/admin");
-    }, 1000);
-  };
-
-  // Cancela si se suelta el click antes de tiempo
-  const cancelPress = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-  };
 
   return (
     <header className={styles.header}>
@@ -29,11 +14,7 @@ export default function Header() {
         <div className={styles.headerContent}>
           <div
             className={styles.logo}
-            onMouseDown={startPress}
-            onMouseUp={cancelPress}
-            onMouseLeave={cancelPress} // Cancela si el mouse sale del logo
-            onTouchStart={startPress} // Soporte para móviles
-            onTouchEnd={cancelPress}
+            onClick={() => router.push("/")}
             style={{ cursor: "pointer", userSelect: "none" }}
           >
             <Image
