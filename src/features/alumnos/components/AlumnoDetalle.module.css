@@ -392,57 +392,92 @@
 
 /* Payments Table */
 .paymentsTableArea {
-  padding: 0 1.5rem 1.5rem;
+  padding: 1.5rem;
 }
 
 .paymentsTableArea h3 {
   font-size: 0.9rem;
   text-transform: uppercase;
   color: var(--color-gray-500);
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
-.miniTable {
+.tableResponsive {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-100);
+}
+
+.paymentsTable {
   width: 100%;
   border-collapse: collapse;
+  background: white;
 }
 
-.miniTable th {
-  background: var(--color-blue-primary);
-  color: white;
+.paymentsTable th {
+  background: #f8fafc;
+  color: var(--color-blue-dark);
   text-align: left;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   font-size: 0.75rem;
   text-transform: uppercase;
+  font-weight: 700;
+  border-bottom: 2px solid var(--color-gray-100);
 }
 
-.miniTable td {
+.paymentsTable td {
   padding: 1rem;
   border-bottom: 1px solid var(--color-gray-50);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  color: var(--color-gray-700);
+  transition: background 0.2s;
 }
 
-.badgePaid {
-  background: #e6f9ed;
-  color: #16a34a;
-  padding: 0.25rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
+.paymentsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.paymentsTable tr:hover td {
+  background: #fdfdfd;
+}
+
+.amountCell {
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
+  color: var(--color-blue-primary);
+}
+
+.boletaCell {
+  font-family: monospace;
+  color: var(--color-gray-500);
+  font-weight: 500;
+}
+
+.emptyTableMessage {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-gray-400);
+  background: #f8fafc;
+  border-radius: var(--radius-md);
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 .viewAllPayments {
   display: block;
   text-align: center;
-  margin-top: 1rem;
-  color: var(--color-orange-primary);
+  margin-top: 1.5rem;
+  color: var(--color-blue-primary);
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
+  transition: color 0.2s;
+}
+
+.viewAllPayments:hover {
+  color: var(--color-blue-dark);
+  text-decoration: underline;
 }
 
 /* Observations */

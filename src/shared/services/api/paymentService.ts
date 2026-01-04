@@ -10,4 +10,16 @@ export const PaymentService = {
     if (!res.data) throw new Error("Error creating payment");
     return res.data;
   },
+
+  async getByEnrollmentId(enrollmentId: number): Promise<PaymentResponse[]> {
+    const res = await apiClient.get<PaymentResponse[]>(
+      `/payments/enrollment/${enrollmentId}`
+    );
+    return res.data || [];
+  },
+
+  async getAll(): Promise<PaymentResponse[]> {
+    const res = await apiClient.get<PaymentResponse[]>("/payments");
+    return res.data || [];
+  },
 };

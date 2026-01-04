@@ -5,6 +5,7 @@ import { StudentService } from "@/shared/services/api/studentService";
 import { EnrollmentService } from "@/shared/services/api/enrollmentService";
 import { CampusService } from "@/shared/services/api/campusService";
 import { PlanService } from "@/shared/services/api/planService";
+import { PaymentService } from "@/shared/services/api/paymentService";
 import {
   Loader2,
   X,
@@ -20,6 +21,7 @@ import {
   EnrollmentResponse,
   Campus,
   Plan,
+  PaymentResponse,
 } from "@/features/matriculas/models/EnrollmentModels";
 
 interface AlumnoDetalleProps {
@@ -40,6 +42,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
   const [enrollment, setEnrollment] = useState<EnrollmentResponse | null>(null);
   const [campus, setCampus] = useState<Campus | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [payments, setPayments] = useState<PaymentResponse[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(true);
 
   useEffect(() => {
@@ -54,19 +57,57 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
       const updatedAlumno: Alumno = {
         ...alumno,
         nombre: studentData.nombre,
-        dni: studentData.dni || "N/A",
-        email: studentData.correo || "N/A",
+        dni: studentData.dni || "",
+        email: studentData.correo || "",
+        celularAlumno: studentData.celularAlumno || "",
+        distrito: studentData.distrito || "",
+        fechaNacimiento: studentData.fechaNacimiento || "",
+        celularApoderado: studentData.celularApoderado || "",
         estado: studentData.active ? "Activo" : "Inactivo",
-        // preserve other fields if they were mapped before
       };
       setAlumno(updatedAlumno);
 
-      const enrollments = await EnrollmentService.getByStudentId(
-        parseInt(alumno.id)
-      );
+      let enrollments: EnrollmentResponse[] = [];
+      try {
+        enrollments = await EnrollmentService.getByStudentId(
+          parseInt(alumno.id)
+        );
+      } catch (e: any) {
+        if (e.statusCode === 404) {
+          console.warn(
+            "Direct student enrollment endpoint not found, falling back to getAll"
+          );
+          const allEnrollments = await EnrollmentService.getAll();
+          enrollments = allEnrollments.filter(
+            (e) => e.studentId === parseInt(alumno.id)
+          );
+        } else {
+          throw e;
+        }
+      }
+
       if (enrollments.length > 0) {
-        const activeEnrollment = enrollments[0]; // Assuming first is the relevant one
+        const activeEnrollment = enrollments[enrollments.length - 1]; // Use latest
         setEnrollment(activeEnrollment);
+
+        let paymentsData: PaymentResponse[] = [];
+        try {
+          paymentsData = await PaymentService.getByEnrollmentId(
+            activeEnrollment.id
+          );
+        } catch (e: any) {
+          if (e.statusCode === 404) {
+            console.warn(
+              "Direct enrollment payments endpoint not found, falling back to getAll"
+            );
+            const allPayments = await PaymentService.getAll();
+            paymentsData = allPayments.filter(
+              (p) => p.enrollmentId === activeEnrollment.id
+            );
+          } else {
+            throw e;
+          }
+        }
 
         const [campuses, plans] = await Promise.all([
           CampusService.getAll(),
@@ -77,9 +118,22 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
           campuses.find((c) => c.id === activeEnrollment.campusId) || null
         );
         setPlan(plans.find((p) => p.id === activeEnrollment.planId) || null);
+        setPayments(
+          paymentsData.sort(
+            (a, b) =>
+              new Date(b.fechaPago).getTime() - new Date(a.fechaPago).getTime()
+          )
+        );
       }
-    } catch (error) {
-      console.error("Error fetching student details:", error);
+    } catch (error: any) {
+      console.error("Error fetching student details. Full error:", error);
+      const errorMsg =
+        error.message ||
+        (typeof error === "string"
+          ? error
+          : JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      // No alert here to avoid spamming the user if they're just browsing,
+      // but log it properly for diagnostics.
     } finally {
       setLoadingDetails(false);
     }
@@ -326,15 +380,6 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
                     // Refresh data after update
                     await fetchStudentDetails();
 
-                    // Sync back to list using backend data
-                    onUpdate({
-                      ...alumno,
-                      nombre: updated.nombre,
-                      dni: updated.dni || "",
-                      email: updated.correo || "",
-                      estado: updated.active ? "Activo" : "Inactivo",
-                    });
-
                     setIsModalOpen(false);
                   } catch (error: any) {
                     console.error("Error updating student. Full error:", error);
@@ -519,27 +564,28 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
               Contacto del apoderado
             </h3>
             <div className={styles.emergencyInfo}>
-              <h3>
-                {enrollment
-                  ? "Número de contacto"
-                  : "No registra contacto del apoderado"}
-              </h3>
-              <div className={styles.emergencyPhone}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
-                {alumno.celularApoderado ||
-                  "No registra contacto del apoderado"}
-              </div>
+              {!alumno.celularApoderado && !enrollment ? (
+                <h3>No registra contacto del apoderado</h3>
+              ) : (
+                <>
+                  <h3>Número de contacto</h3>
+                  <div className={styles.emergencyPhone}>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    {alumno.celularApoderado || "No brinda número"}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -668,9 +714,42 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
 
             <div className={styles.paymentsTableArea}>
               <h3>Últimos Pagos</h3>
-              <div className={styles.emptyTableMessage}>
-                No se registran pagos realizados recientemente.
-              </div>
+              {payments.length > 0 ? (
+                <div className={styles.tableResponsive}>
+                  <table className={styles.paymentsTable}>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Método</th>
+                        <th>Monto</th>
+                        <th>Boleta</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            {new Date(p.fechaPago).toLocaleDateString("es-PE")}
+                          </td>
+                          <td>{p.tipo}</td>
+                          <td>{p.metodo}</td>
+                          <td className={styles.amountCell}>
+                            S/. {p.monto.toFixed(2)}
+                          </td>
+                          <td className={styles.boletaCell}>
+                            {p.numeroBoleta}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={styles.emptyTableMessage}>
+                  No se registran pagos realizados recientemente.
+                </div>
+              )}
             </div>
           </div>
 

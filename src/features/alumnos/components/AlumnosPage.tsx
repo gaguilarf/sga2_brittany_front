@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./AlumnosPage.module.css";
 import AlumnoDetalle from "./AlumnoDetalle";
 import { StudentService } from "@/shared/services/api/studentService";
@@ -69,6 +69,7 @@ type SortKey = "nombre" | "sede" | "estado" | "fechaIngreso";
 
 export default function AlumnosPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // States
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
@@ -109,6 +110,16 @@ export default function AlumnosPage() {
       setAlumnos(mapped);
       setAllCampuses(campusesData);
       setError(null);
+
+      // Check URL for student detail after initial load
+      const detailId = searchParams.get("id");
+      if (detailId) {
+        const student = mapped.find((a) => a.id === detailId);
+        if (student) {
+          setSelectedAlumno(student);
+          setViewMode("detail");
+        }
+      }
     } catch (err) {
       console.error("Error fetching students:", err);
       setError("Error al cargar los alumnos");
@@ -240,11 +251,17 @@ export default function AlumnosPage() {
   const handleSeeDetails = (alumno: Alumno) => {
     setSelectedAlumno(alumno);
     setViewMode("detail");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("id", alumno.id);
+    router.push(`?${params.toString()}`);
   };
 
   const handleBackToList = () => {
     setViewMode("list");
     setSelectedAlumno(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("id");
+    router.push(`?${params.toString()}`);
   };
 
   // Helper para convertir DD/MM/YYYY a YYYY-MM-DD para el input date
