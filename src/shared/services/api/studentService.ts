@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 import {
   Student,
   CreateStudentDto,
+  UpdateStudentDto,
 } from "@/features/matriculas/models/EnrollmentModels";
 
 export const StudentService = {
@@ -30,5 +31,14 @@ export const StudentService = {
   async getByDni(dni: string): Promise<Student | null> {
     const students = await this.getAll();
     return students.find((s) => s.dni === dni) || null;
+  },
+
+  async update(id: number, data: UpdateStudentDto): Promise<Student> {
+    const res = await apiClient.patch<Student, UpdateStudentDto>(
+      `/students/${id}`,
+      data
+    );
+    if (!res.data) throw new Error("Error updating student");
+    return res.data;
   },
 };

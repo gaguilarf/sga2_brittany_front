@@ -10,4 +10,16 @@ export const EnrollmentService = {
     if (!res.data) throw new Error("Error creating enrollment");
     return res.data;
   },
+
+  async getByStudentId(studentId: number): Promise<EnrollmentResponse[]> {
+    const res = await apiClient.get<EnrollmentResponse[]>(
+      `/enrollments/student/${studentId}`
+    );
+    return res.data || [];
+  },
+
+  async getAll(): Promise<EnrollmentResponse[]> {
+    const res = await apiClient.get<EnrollmentResponse[]>("/enrollments");
+    return res.data || [];
+  },
 };

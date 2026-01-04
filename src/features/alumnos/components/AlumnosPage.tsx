@@ -1,9 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./AlumnosPage.module.css";
 import AlumnoDetalle from "./AlumnoDetalle";
+import { StudentService } from "@/shared/services/api/studentService";
+import { EnrollmentService } from "@/shared/services/api/enrollmentService";
+import { CampusService } from "@/shared/services/api/campusService";
+import {
+  Student,
+  EnrollmentResponse,
+  Campus,
+} from "@/features/matriculas/models/EnrollmentModels";
+import { Loader2 } from "lucide-react";
 
 export interface Alumno {
   id: string;
@@ -13,61 +22,43 @@ export interface Alumno {
   sede: string;
   estado: "Activo" | "Inactivo" | "Egresado";
   fechaIngreso: string;
+  celularAlumno?: string;
+  celularApoderado?: string;
+  distrito?: string;
+  fechaNacimiento?: string;
 }
 
-// Generador de 150 alumnos mock
-const generateMockAlumnos = (): Alumno[] => {
-  const nombres = [
-    "Ana",
-    "Carlos",
-    "Laura",
-    "Marcos",
-    "Sofia",
-    "Daniel",
-    "Elena",
-    "Javier",
-    "Lucia",
-    "Ricardo",
-  ];
-  const apellidos = [
-    "García Lopez",
-    "Ruiz Gomez",
-    "Martín Díaz",
-    "Soler Peña",
-    "Navarro Gil",
-    "Vega Sanz",
-    "Torres Castro",
-    "Méndez Ruiz",
-    "Pérez Sosa",
-    "Luna Victoria",
-  ];
-  const sedes = ["Sede Central", "Sede Norte", "Sede Sur"];
-  const estados: Alumno["estado"][] = ["Activo", "Inactivo", "Egresado"];
+const mapStudentToAlumno = (
+  s: Student,
+  enrollments: EnrollmentResponse[] = [],
+  campuses: Campus[] = []
+): Alumno => {
+  const studentEnrollments = enrollments.filter((e) => e.studentId === s.id);
+  const latestEnrollment =
+    studentEnrollments.length > 0
+      ? studentEnrollments[studentEnrollments.length - 1]
+      : null;
 
-  return Array.from({ length: 150 }, (_, i) => {
-    const nombre = nombres[i % nombres.length];
-    const apellido = apellidos[i % apellidos.length];
-    const fullNombre = `${nombre} ${apellido} ${i > 10 ? i : ""}`;
-    return {
-      id: (i + 1).toString(),
-      nombre: fullNombre,
-      dni: `${(12345678 + i).toString()}${String.fromCharCode(65 + (i % 26))}`,
-      email: `${nombre.toLowerCase()}.${apellido
-        .split(" ")[0]
-        .toLowerCase()}${i}@brittany.edu.pe`,
-      sede: sedes[i % sedes.length],
-      estado: estados[i % estados.length],
-      fechaIngreso: `${((i % 28) + 1).toString().padStart(2, "0")}/${(
-        (i % 12) +
-        1
-      )
-        .toString()
-        .padStart(2, "0")}/202${i % 4}`,
-    };
-  });
+  let sedeName = "Sin sede";
+  if (latestEnrollment) {
+    const campus = campuses.find((c) => c.id === latestEnrollment.campusId);
+    if (campus) sedeName = campus.name;
+  }
+
+  return {
+    id: s.id.toString(),
+    nombre: s.nombre,
+    dni: s.dni || "",
+    email: s.correo || "",
+    sede: sedeName,
+    estado: s.active ? "Activo" : "Inactivo",
+    fechaIngreso: new Date(s.createdAt).toLocaleDateString("es-PE"),
+    celularAlumno: s.celularAlumno || "",
+    celularApoderado: s.celularApoderado || "",
+    distrito: s.distrito || "",
+    fechaNacimiento: s.fechaNacimiento || "",
+  };
 };
-
-const ALL_ALUMNOS = generateMockAlumnos();
 
 type SortKey = "nombre" | "sede" | "estado" | "fechaIngreso";
 
@@ -75,7 +66,9 @@ export default function AlumnosPage() {
   const router = useRouter();
 
   // States
-  const [alumnos, setAlumnos] = useState<Alumno[]>(ALL_ALUMNOS);
+  const [alumnos, setAlumnos] = useState<Alumno[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sedeFilter, setSedeFilter] = useState("Todas");
   const [estadoFilter, setEstadoFilter] = useState("Todos");
@@ -88,6 +81,34 @@ export default function AlumnosPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Alumno | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch logic
+  useEffect(() => {
+    fetchAlumnos();
+  }, []);
+
+  const fetchAlumnos = async () => {
+    setLoading(true);
+    try {
+      const [studentsData, enrollmentsData, campusesData] = await Promise.all([
+        StudentService.getAll(),
+        EnrollmentService.getAll(),
+        CampusService.getAll(),
+      ]);
+
+      const mapped = studentsData.map((s) =>
+        mapStudentToAlumno(s, enrollmentsData, campusesData)
+      );
+      setAlumnos(mapped);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      setError("Error al cargar los alumnos");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // View state: list or detail
   const [viewMode, setViewMode] = useState<"list" | "detail">("list");
@@ -161,13 +182,43 @@ export default function AlumnosPage() {
     setEditForm(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editForm) {
-      setAlumnos((prev) =>
-        prev.map((a) => (a.id === editForm.id ? editForm : a))
-      );
-      setEditingId(null);
-      setEditForm(null);
+      setIsSaving(true);
+      try {
+        const studentId = parseInt(editForm.id);
+
+        // Sanitize inputs
+        const updateData = {
+          nombre: editForm.nombre.trim(),
+          correo: editForm.email.trim() || undefined,
+          dni: editForm.dni.trim() || undefined,
+          celularAlumno: editForm.celularAlumno?.trim() || undefined,
+          celularApoderado: editForm.celularApoderado?.trim() || undefined,
+          distrito: editForm.distrito?.trim() || undefined,
+          fechaNacimiento: editForm.fechaNacimiento || undefined,
+        };
+
+        const updated = await StudentService.update(studentId, updateData);
+
+        setAlumnos((prev) =>
+          prev.map((a) =>
+            a.id === editForm.id ? mapStudentToAlumno(updated) : a
+          )
+        );
+        setEditingId(null);
+        setEditForm(null);
+      } catch (err: any) {
+        console.error("Error updating student. Full error:", err);
+        const errorMsg =
+          err.message ||
+          (typeof err === "string"
+            ? err
+            : JSON.stringify(err, Object.getOwnPropertyNames(err)));
+        alert(`Error al guardar los cambios: ${errorMsg}`);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -176,13 +227,7 @@ export default function AlumnosPage() {
   ) => {
     if (!editForm) return;
     const { name, value } = e.target;
-    if (name === "fechaIngreso") {
-      // Convertir YYYY-MM-DD a DD/MM/YYYY
-      const [year, month, day] = value.split("-");
-      setEditForm({ ...editForm, [name]: `${day}/${month}/${year}` });
-    } else {
-      setEditForm({ ...editForm, [name]: value });
-    }
+    setEditForm({ ...editForm, [name]: value });
   };
 
   const handleSeeDetails = (alumno: Alumno) => {
@@ -203,6 +248,13 @@ export default function AlumnosPage() {
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const handleUpdateAlumno = (updatedAlumno: Alumno) => {
+    setAlumnos((prev) =>
+      prev.map((a) => (a.id === updatedAlumno.id ? updatedAlumno : a))
+    );
+    setSelectedAlumno(updatedAlumno);
   };
 
   const renderSortIcon = (key: SortKey) => {
@@ -232,7 +284,13 @@ export default function AlumnosPage() {
   };
 
   if (viewMode === "detail" && selectedAlumno) {
-    return <AlumnoDetalle alumno={selectedAlumno} onBack={handleBackToList} />;
+    return (
+      <AlumnoDetalle
+        alumno={selectedAlumno}
+        onBack={handleBackToList}
+        onUpdate={handleUpdateAlumno}
+      />
+    );
   }
 
   return (
@@ -241,7 +299,7 @@ export default function AlumnosPage() {
         <h1 className={styles.pageTitle}>Lista de Alumnos</h1>
         <button
           className={styles.btnNewAlumno}
-          onClick={() => router.push("/admin/matriculas")}
+          onClick={() => router.push("/admin/matriculas?mode=new")}
         >
           <svg
             width="20"
@@ -367,185 +425,192 @@ export default function AlumnosPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedAlumnos.map((alumno) => {
-                const isEditing = editingId === alumno.id;
-                const displayAlumno = isEditing ? editForm! : alumno;
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className={styles.emptyResults}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <Loader2 className={styles.spinner} size={20} />
+                      Cargando alumnos...
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={6} className={styles.emptyResults}>
+                    {error}
+                  </td>
+                </tr>
+              ) : (
+                paginatedAlumnos.map((alumno) => {
+                  const isEditing = editingId === alumno.id;
+                  const displayAlumno = isEditing ? editForm! : alumno;
 
-                return (
-                  <tr
-                    key={alumno.id}
-                    className={isEditing ? styles.editingRow : ""}
-                  >
-                    <td className={styles.nameCell}>
-                      {isEditing ? (
-                        <div className={styles.editInputsStack}>
-                          <input
-                            type="text"
-                            name="nombre"
-                            value={displayAlumno.nombre}
-                            onChange={handleEditChange}
-                            className={styles.inlineInput}
-                            placeholder="Nombre Completo"
-                          />
-                          <input
-                            type="email"
-                            name="email"
-                            value={displayAlumno.email}
-                            onChange={handleEditChange}
-                            className={styles.inlineInputSmall}
-                            placeholder="Correo electrónico"
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          <div>{alumno.nombre}</div>
-                          <div className={styles.emailSub}>{alumno.email}</div>
-                        </>
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="dni"
-                          value={displayAlumno.dni}
-                          onChange={handleEditChange}
-                          className={styles.inlineInput}
-                          placeholder="DNI"
-                        />
-                      ) : (
-                        alumno.dni
-                      )}
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <select
-                          name="sede"
-                          value={displayAlumno.sede}
-                          onChange={handleEditChange}
-                          className={styles.inlineSelect}
-                        >
-                          <option value="Sede Central">Sede Central</option>
-                          <option value="Sede Norte">Sede Norte</option>
-                          <option value="Sede Sur">Sede Sur</option>
-                        </select>
-                      ) : (
-                        alumno.sede
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`${styles.statusBadge} ${
-                          styles[alumno.estado.toLowerCase()]
-                        }`}
-                      >
-                        <span className={styles.statusDot}></span>
-                        {alumno.estado}
-                      </span>
-                    </td>
-                    <td>
-                      {isEditing ? (
-                        <input
-                          type="date"
-                          name="fechaIngreso"
-                          value={formatDateForInput(displayAlumno.fechaIngreso)}
-                          onChange={handleEditChange}
-                          className={styles.inlineInput}
-                        />
-                      ) : (
-                        alumno.fechaIngreso
-                      )}
-                    </td>
-                    <td>
-                      <div className={styles.actions}>
+                  return (
+                    <tr
+                      key={alumno.id}
+                      className={isEditing ? styles.editingRow : ""}
+                    >
+                      <td className={styles.nameCell}>
                         {isEditing ? (
-                          <>
-                            <button
-                              className={styles.btnSave}
-                              onClick={handleSave}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                              </svg>
-                              Guardar
-                            </button>
-                            <button
-                              className={styles.btnCancel}
-                              onClick={handleCancel}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                              </svg>
-                              Cancelar
-                            </button>
-                          </>
+                          <div className={styles.editInputsStack}>
+                            <input
+                              type="text"
+                              name="nombre"
+                              value={displayAlumno.nombre}
+                              onChange={handleEditChange}
+                              className={styles.inlineInput}
+                              placeholder="Nombre Completo"
+                            />
+                            <input
+                              type="email"
+                              name="email"
+                              value={displayAlumno.email}
+                              onChange={handleEditChange}
+                              className={styles.inlineInputSmall}
+                              placeholder="Correo electrónico"
+                            />
+                          </div>
                         ) : (
                           <>
-                            <button
-                              className={styles.btnEdit}
-                              onClick={() => startEditing(alumno)}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                              </svg>
-                              Editar
-                            </button>
-                            <button
-                              className={styles.btnDetails}
-                              onClick={() => handleSeeDetails(alumno)}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                              </svg>
-                              Detalles
-                            </button>
+                            <div>{alumno.nombre}</div>
+                            <div className={styles.emailSub}>
+                              {alumno.email}
+                            </div>
                           </>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {paginatedAlumnos.length === 0 && (
+                      </td>
+                      <td>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="dni"
+                            value={displayAlumno.dni}
+                            onChange={handleEditChange}
+                            className={styles.inlineInput}
+                            placeholder="DNI"
+                          />
+                        ) : (
+                          alumno.dni
+                        )}
+                      </td>
+                      <td>{alumno.sede}</td>
+                      <td>
+                        <span
+                          className={`${styles.statusBadge} ${
+                            styles[alumno.estado.toLowerCase()]
+                          }`}
+                        >
+                          <span className={styles.statusDot}></span>
+                          {alumno.estado}
+                        </span>
+                      </td>
+                      <td>{alumno.fechaIngreso}</td>
+                      <td>
+                        <div className={styles.actions}>
+                          {isEditing ? (
+                            <>
+                              <button
+                                className={styles.btnSave}
+                                onClick={handleSave}
+                                disabled={isSaving}
+                              >
+                                {isSaving ? (
+                                  <Loader2
+                                    className={styles.spinner}
+                                    size={14}
+                                  />
+                                ) : (
+                                  <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                  </svg>
+                                )}
+                                {isSaving ? "Guardando..." : "Guardar"}
+                              </button>
+                              <button
+                                className={styles.btnCancel}
+                                onClick={handleCancel}
+                              >
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                Cancelar
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className={styles.btnEdit}
+                                onClick={() => startEditing(alumno)}
+                              >
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                Editar
+                              </button>
+                              <button
+                                className={styles.btnDetails}
+                                onClick={() => handleSeeDetails(alumno)}
+                              >
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                  <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                Detalles
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+              {!loading && !error && paginatedAlumnos.length === 0 && (
                 <tr>
                   <td colSpan={6} className={styles.emptyResults}>
                     No se encontraron alumnos que coincidan con los filtros

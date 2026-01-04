@@ -24,6 +24,17 @@ export interface CreateStudentDto {
   correo?: string;
 }
 
+export interface UpdateStudentDto {
+  nombre?: string;
+  dni?: string;
+  fechaNacimiento?: string;
+  edad?: number;
+  distrito?: string;
+  celularAlumno?: string;
+  celularApoderado?: string;
+  correo?: string;
+}
+
 export interface Campus {
   id: number;
   name: string;

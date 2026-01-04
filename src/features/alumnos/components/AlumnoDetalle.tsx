@@ -1,70 +1,115 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./AlumnoDetalle.module.css";
 import { Alumno } from "./AlumnosPage";
+import { StudentService } from "@/shared/services/api/studentService";
+import { EnrollmentService } from "@/shared/services/api/enrollmentService";
+import { CampusService } from "@/shared/services/api/campusService";
+import { PlanService } from "@/shared/services/api/planService";
+import {
+  Loader2,
+  X,
+  Phone,
+  User,
+  Calendar,
+  MapPin,
+  GraduationCap,
+  Building2,
+  Clock,
+} from "lucide-react";
+import {
+  EnrollmentResponse,
+  Campus,
+  Plan,
+} from "@/features/matriculas/models/EnrollmentModels";
 
 interface AlumnoDetalleProps {
-  alumno: any; // Using any for now to allow for extended detailed mock data
+  alumno: Alumno;
   onBack: () => void;
+  onUpdate: (updatedAlumno: Alumno) => void;
 }
 
-const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
-  // Extended mock data for demonstration matching the image
-  const detailedData = {
-    estudianteId: "12345678A",
-    proximoPago: "23/01/2026",
-    nivel: "Inglés B2 - Avanzado",
-    telefono: "+51 933 345 678",
-    direccion: "C/ Mayor 123, 2ªA, Madrid",
-    fechaNacimiento: "15/04/2005 (19 años)",
-    contactoEmergencia: {
-      nombre: "Maria Lopez",
-      parentesco: "Madre",
-      telefono: "+34 699 888 777",
-    },
-    academico: {
-      curso: "Inglés General - Nivel B2",
-      grupo: "Grupo A (L-X 17:00-18:30)",
-      profesor: "John Smith",
-      sede: "Sede Central",
-      asistencia: 92,
-      faltas: "2 faltas justificadas",
-    },
-    financiero: {
-      proximoVencimiento: "23 de enero de 2026",
-      periodo: "Mensualidad Enero",
-      estadoPagos: "Al Corriente",
-      estadoCaption: "Sin deudas vencidas",
-      saldoPendiente: "S/. 0,00",
-      totalAPagar: "Total a pagar",
-      ultimosPagos: [
-        {
-          concepto: "Mensualidad Mayo 2024",
-          fecha: "02/05/2024",
-          monto: "S/. 85.00",
-          estado: "Pagado",
-        },
-        {
-          concepto: "Material Didáctico - Libro B2",
-          fecha: "15/04/2024",
-          monto: "S/. 35.00",
-          estado: "Pagado",
-        },
-        {
-          concepto: "Mensualidad Abril 2024",
-          fecha: "01/04/2024",
-          monto: "S/. 85.00",
-          estado: "Pagado",
-        },
-      ],
-    },
-    observaciones: [
-      {
-        texto:
-          "El alumno muestra gran interés en las actividades orales. Se recomienda reforzar la gramática en casa.",
-        autor: "John Smith",
-        fecha: "20/05/2025",
-      },
-    ],
+const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
+  alumno: initialAlumno,
+  onBack,
+  onUpdate,
+}) => {
+  const [alumno, setAlumno] = useState<Alumno>(initialAlumno);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null); // Use any for extended fields
+  const [isSaving, setIsSaving] = useState(false);
+  const [enrollment, setEnrollment] = useState<EnrollmentResponse | null>(null);
+  const [campus, setCampus] = useState<Campus | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(true);
+
+  useEffect(() => {
+    fetchStudentDetails();
+  }, [alumno.id]);
+
+  const fetchStudentDetails = async () => {
+    setLoadingDetails(true);
+    try {
+      const studentData = await StudentService.getById(parseInt(alumno.id));
+      // Update local student state with fresh data from DB
+      const updatedAlumno: Alumno = {
+        ...alumno,
+        nombre: studentData.nombre,
+        dni: studentData.dni || "N/A",
+        email: studentData.correo || "N/A",
+        estado: studentData.active ? "Activo" : "Inactivo",
+        // preserve other fields if they were mapped before
+      };
+      setAlumno(updatedAlumno);
+
+      const enrollments = await EnrollmentService.getByStudentId(
+        parseInt(alumno.id)
+      );
+      if (enrollments.length > 0) {
+        const activeEnrollment = enrollments[0]; // Assuming first is the relevant one
+        setEnrollment(activeEnrollment);
+
+        const [campuses, plans] = await Promise.all([
+          CampusService.getAll(),
+          PlanService.getAll(),
+        ]);
+
+        setCampus(
+          campuses.find((c) => c.id === activeEnrollment.campusId) || null
+        );
+        setPlan(plans.find((p) => p.id === activeEnrollment.planId) || null);
+      }
+    } catch (error) {
+      console.error("Error fetching student details:", error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  // Helper to open modal with current data
+  const handleOpenEdit = async () => {
+    try {
+      const s = await StudentService.getById(parseInt(alumno.id));
+      setEditForm({
+        nombre: s.nombre,
+        dni: s.dni || "",
+        correo: s.correo || "",
+        celularAlumno: s.celularAlumno || "",
+        distrito: s.distrito || "",
+        fechaNacimiento: s.fechaNacimiento || "",
+        celularApoderado: s.celularApoderado || "",
+        active: s.active,
+      });
+      setIsModalOpen(true);
+    } catch (error) {
+      alert("Error al cargar datos para editar");
+    }
+  };
+
+  // Placeholder for missing DB data
+  const academicPlaceholders = {
+    asistencia: 0,
+    faltas: "No registra faltas",
+    observaciones: [],
   };
 
   return (
@@ -94,8 +139,10 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
             </span>
           </h1>
           <p className={styles.subtitle}>
-            ID Estudiante: {detailedData.estudianteId} | Próximo pago de
-            mensualidad: {detailedData.proximoPago}
+            ID Estudiante: {alumno.dni} |{" "}
+            {enrollment
+              ? `Próximo pago: ${enrollment.saldo > 0 ? "Pendiente" : "Al día"}`
+              : "Sin matrícula activa"}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -116,7 +163,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
             </svg>
             Imprimir
           </button>
-          <button className={styles.btnEdit}>
+          <button className={styles.btnEdit} onClick={handleOpenEdit}>
             <svg
               width="18"
               height="18"
@@ -134,6 +181,184 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
           </button>
         </div>
       </header>
+
+      {/* Modal de Edición */}
+      {isModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h2>Editar Datos del Alumno</h2>
+              <button
+                className={styles.btnCloseModal}
+                onClick={() => setIsModalOpen(false)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label>Nombre Completo</label>
+                  <input
+                    type="text"
+                    value={editForm.nombre}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, nombre: e.target.value })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>DNI</label>
+                  <input
+                    type="text"
+                    value={editForm.dni}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, dni: e.target.value })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Correo Electrónico</label>
+                  <input
+                    type="email"
+                    value={editForm.correo}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, correo: e.target.value })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Teléfono (Alumno)</label>
+                  <input
+                    type="text"
+                    value={editForm.celularAlumno}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        celularAlumno: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Dirección (Distrito)</label>
+                  <input
+                    type="text"
+                    value={editForm.distrito}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, distrito: e.target.value })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Fecha de Nacimiento</label>
+                  <input
+                    type="date"
+                    value={editForm.fechaNacimiento}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        fechaNacimiento: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Contacto del Apoderado (Número)</label>
+                  <input
+                    type="text"
+                    value={editForm.celularApoderado}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        celularApoderado: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Estado</label>
+                  <select
+                    value={editForm.active ? "Activo" : "Inactivo"}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        active: e.target.value === "Activo",
+                      })
+                    }
+                  >
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.btnCancelModal}
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className={styles.btnSaveModal}
+                disabled={isSaving}
+                onClick={async () => {
+                  setIsSaving(true);
+                  try {
+                    // Sanitize inputs
+                    const updateData = {
+                      nombre: editForm.nombre.trim(),
+                      dni: editForm.dni.trim() || undefined,
+                      correo: editForm.correo.trim() || undefined,
+                      celularAlumno: editForm.celularAlumno.trim() || undefined,
+                      distrito: editForm.distrito.trim() || undefined,
+                      fechaNacimiento: editForm.fechaNacimiento || undefined,
+                      celularApoderado:
+                        editForm.celularApoderado.trim() || undefined,
+                    };
+
+                    const updated = await StudentService.update(
+                      parseInt(alumno.id),
+                      updateData
+                    );
+
+                    // Refresh data after update
+                    await fetchStudentDetails();
+
+                    // Sync back to list using backend data
+                    onUpdate({
+                      ...alumno,
+                      nombre: updated.nombre,
+                      dni: updated.dni || "",
+                      email: updated.correo || "",
+                      estado: updated.active ? "Activo" : "Inactivo",
+                    });
+
+                    setIsModalOpen(false);
+                  } catch (error: any) {
+                    console.error("Error updating student. Full error:", error);
+                    const errorMsg =
+                      error.message ||
+                      (typeof error === "string"
+                        ? error
+                        : JSON.stringify(
+                            error,
+                            Object.getOwnPropertyNames(error)
+                          ));
+                    alert(`Error al actualizar los datos: ${errorMsg}`);
+                  } finally {
+                    setIsSaving(false);
+                  }
+                }}
+              >
+                {isSaving && <Loader2 className={styles.spinner} size={16} />}
+                {isSaving ? "Guardando..." : "Guardar Cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={styles.mainGrid}>
         {/* Left Column */}
@@ -159,7 +384,9 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
             </div>
             <div className={styles.profileInfo}>
               <h2>{alumno.nombre}</h2>
-              <p className={styles.courseText}>{detailedData.nivel}</p>
+              <p className={styles.courseText}>
+                {plan ? plan.name : "Sin curso asignado"}
+              </p>
             </div>
 
             <div className={styles.contactList}>
@@ -205,7 +432,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                 <div>
                   <span className={styles.contactLabel}>Teléfono</span>
                   <span className={styles.contactValue}>
-                    {detailedData.telefono}
+                    {alumno.celularAlumno || "No registra"}
                   </span>
                 </div>
               </div>
@@ -229,7 +456,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                 <div>
                   <span className={styles.contactLabel}>Dirección</span>
                   <span className={styles.contactValue}>
-                    {detailedData.direccion}
+                    {alumno.distrito || "No registra"}
                   </span>
                 </div>
               </div>
@@ -264,7 +491,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                     Fecha de Nacimiento
                   </span>
                   <span className={styles.contactValue}>
-                    {detailedData.fechaNacimiento}
+                    {alumno.fechaNacimiento || "No registra"}
                   </span>
                 </div>
               </div>
@@ -289,12 +516,13 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
-              Contacto de Emergencia
+              Contacto del apoderado
             </h3>
             <div className={styles.emergencyInfo}>
               <h3>
-                {detailedData.contactoEmergencia.nombre} (
-                {detailedData.contactoEmergencia.parentesco})
+                {enrollment
+                  ? "Número de contacto"
+                  : "No registra contacto del apoderado"}
               </h3>
               <div className={styles.emergencyPhone}>
                 <svg
@@ -309,7 +537,8 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                 >
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
                 </svg>
-                {detailedData.contactoEmergencia.telefono}
+                {alumno.celularApoderado ||
+                  "No registra contacto del apoderado"}
               </div>
             </div>
           </div>
@@ -358,33 +587,26 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                 <div>
                   <span className={styles.infoLabel}>Curso Actual</span>
                   <div className={styles.infoValue}>
-                    {detailedData.academico.curso}
+                    {plan ? plan.name : "N/A"}
                   </div>
                 </div>
                 <div>
                   <span className={styles.infoLabel}>Grupo / Horario</span>
                   <div className={styles.infoValue}>
-                    {detailedData.academico.grupo}
+                    {enrollment?.horario || "N/A"}
                   </div>
                 </div>
                 <div>
                   <span className={styles.infoLabel}>Profesor Asignado</span>
                   <div className={styles.teacherInfo}>
-                    <div className={styles.teacherAvatar}>
-                      {detailedData.academico.profesor
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </div>
-                    <div className={styles.infoValue}>
-                      {detailedData.academico.profesor}
-                    </div>
+                    <div className={styles.teacherAvatar}>U</div>
+                    <div className={styles.infoValue}>Sin asignar</div>
                   </div>
                 </div>
                 <div>
                   <span className={styles.infoLabel}>Sede</span>
                   <div className={styles.infoValue}>
-                    {detailedData.academico.sede}
+                    {campus ? campus.name : "N/A"}
                   </div>
                 </div>
               </div>
@@ -395,17 +617,17 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                     Asistencia Trimestral
                   </span>
                   <span className={styles.attendancePercentage}>
-                    {detailedData.academico.asistencia}%
+                    {academicPlaceholders.asistencia}%
                   </span>
                 </div>
                 <div className={styles.progressBarContainer}>
                   <div
                     className={styles.progressBar}
-                    style={{ width: `${detailedData.academico.asistencia}%` }}
+                    style={{ width: `${academicPlaceholders.asistencia}%` }}
                   ></div>
                 </div>
                 <div className={styles.attendanceFooter}>
-                  {detailedData.academico.faltas}
+                  {academicPlaceholders.faltas}
                 </div>
               </div>
             </div>
@@ -434,97 +656,21 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
 
             <div className={styles.financialMetrics}>
               <div className={styles.metricCard}>
-                <span className={styles.infoLabel}>Próximo Vencimiento</span>
-                <div className={styles.metricValue}>
-                  {detailedData.financiero.proximoVencimiento}
-                </div>
-                <span className={styles.caption}>
-                  {detailedData.financiero.periodo}
-                </span>
-              </div>
-              <div className={styles.metricCard}>
-                <span className={styles.infoLabel}>Estado de Pagos</span>
-                <div
-                  className={`${styles.metricValue} ${styles.statusOnTrack}`}
-                >
-                  {detailedData.financiero.estadoPagos}
-                </div>
-                <span className={styles.caption}>
-                  {detailedData.financiero.estadoCaption}
-                </span>
-              </div>
-              <div className={styles.metricCard}>
                 <span className={styles.infoLabel}>Saldo Pendiente</span>
                 <div className={styles.metricValue}>
-                  {detailedData.financiero.saldoPendiente}
+                  {enrollment
+                    ? `S/. ${enrollment.saldo.toFixed(2)}`
+                    : "S/. 0,00"}
                 </div>
-                <span className={styles.caption}>
-                  {detailedData.financiero.totalAPagar}
-                </span>
+                <span className={styles.caption}>Matrícula Vigente</span>
               </div>
             </div>
 
             <div className={styles.paymentsTableArea}>
               <h3>Últimos Pagos</h3>
-              <table className={styles.miniTable}>
-                <thead>
-                  <tr>
-                    <th>Concepto</th>
-                    <th>Fecha</th>
-                    <th>Monto</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detailedData.financiero.ultimosPagos.map((pago, idx) => (
-                    <tr key={idx}>
-                      <td>{pago.concepto}</td>
-                      <td>{pago.fecha}</td>
-                      <td style={{ fontWeight: 700 }}>{pago.monto}</td>
-                      <td>
-                        <span className={styles.badgePaid}>
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              background: "#22c55e",
-                              borderRadius: "50%",
-                            }}
-                          ></span>
-                          {pago.estado}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#2563eb"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          style={{ cursor: "pointer" }}
-                        >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                          <polyline points="14 2 14 8 20 8"></polyline>
-                          <line x1="16" y1="13" x2="8" y2="13"></line>
-                          <line x1="16" y1="17" x2="8" y2="17"></line>
-                          <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <a
-                href="#"
-                className={styles.viewAllPayments}
-                onClick={(e) => e.preventDefault()}
-              >
-                Ver historial completo →
-              </a>
+              <div className={styles.emptyTableMessage}>
+                No se registran pagos realizados recientemente.
+              </div>
             </div>
           </div>
 
@@ -546,14 +692,16 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({ alumno, onBack }) => {
                 </svg>
                 Observaciones
               </h3>
-              {detailedData.observaciones.map((obs, idx) => (
-                <div key={idx} className={styles.noteCard}>
-                  <p className={styles.noteText}>"{obs.texto}"</p>
-                  <div className={styles.noteFooter}>
-                    - {obs.autor}, {obs.fecha}
+              {academicPlaceholders.observaciones.map(
+                (obs: any, idx: number) => (
+                  <div key={idx} className={styles.noteCard}>
+                    <p className={styles.noteText}>"{obs.texto}"</p>
+                    <div className={styles.noteFooter}>
+                      - {obs.autor}, {obs.fecha}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
               <button className={styles.btnAddNote}>
                 <span>+</span> Añadir Nota
               </button>
