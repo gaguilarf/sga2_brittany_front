@@ -45,6 +45,11 @@ const mapStudentToAlumno = (
     if (campus) sedeName = campus.name;
   }
 
+  // Use enrollment creation date if available, otherwise student creation date
+  const registrationDate = latestEnrollment
+    ? latestEnrollment.createdAt
+    : s.createdAt;
+
   return {
     id: s.id.toString(),
     nombre: s.nombre,
@@ -52,7 +57,7 @@ const mapStudentToAlumno = (
     email: s.correo || "",
     sede: sedeName,
     estado: s.active ? "Activo" : "Inactivo",
-    fechaIngreso: new Date(s.createdAt).toLocaleDateString("es-PE"),
+    fechaIngreso: new Date(registrationDate).toLocaleDateString("es-PE"),
     celularAlumno: s.celularAlumno || "",
     celularApoderado: s.celularApoderado || "",
     distrito: s.distrito || "",
@@ -67,6 +72,7 @@ export default function AlumnosPage() {
 
   // States
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
+  const [allCampuses, setAllCampuses] = useState<Campus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,6 +107,7 @@ export default function AlumnosPage() {
         mapStudentToAlumno(s, enrollmentsData, campusesData)
       );
       setAlumnos(mapped);
+      setAllCampuses(campusesData);
       setError(null);
     } catch (err) {
       console.error("Error fetching students:", err);
@@ -331,9 +338,13 @@ export default function AlumnosPage() {
               className={styles.select}
             >
               <option value="Todas">Todas</option>
-              <option value="Sede Central">Sede Central</option>
-              <option value="Sede Norte">Sede Norte</option>
-              <option value="Sede Sur">Sede Sur</option>
+              {allCampuses
+                .filter((c) => c.active)
+                .map((campus) => (
+                  <option key={campus.id} value={campus.name}>
+                    {campus.name}
+                  </option>
+                ))}
             </select>
           </div>
 
