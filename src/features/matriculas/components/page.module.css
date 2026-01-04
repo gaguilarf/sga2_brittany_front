@@ -11,14 +11,14 @@
 
 .btnReset {
   position: absolute;
-  top: 0;
+  top: -3rem;
   left: 0;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background: transparent;
   border: none;
-  color: var(--color-gray-500);
+  color: var(--color-blue-primary);
   font-weight: 600;
   cursor: pointer;
   padding: 0.5rem;
@@ -27,7 +27,7 @@
 }
 
 .btnReset:hover {
-  color: var(--color-blue-primary);
+  color: var(--color-blue-dark);
   background: var(--color-blue-50);
 }
 
@@ -588,15 +588,15 @@
 }
 
 .btnNext {
-  background: var(--color-blue-primary);
+  background: var(--color-orange-primary);
   color: var(--color-white);
   border: none;
 }
 
 .btnNext:hover {
-  background: var(--color-blue-dark);
+  background: var(--color-orange-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(35, 91, 204, 0.2);
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3);
 }
 
 .btnRegister {
@@ -819,7 +819,7 @@
 }
 
 .selectionCard:hover {
-  border-color: var(--color-blue-primary);
+  border-color: var(--color-orange-primary);
   transform: translateY(-5px);
   box-shadow: var(--shadow-lg);
 }
@@ -827,8 +827,8 @@
 .selectionIcon {
   width: 80px;
   height: 80px;
-  background: var(--color-blue-50);
-  color: var(--color-blue-primary);
+  background: var(--color-orange-50);
+  color: var(--color-orange-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -837,7 +837,7 @@
 }
 
 .selectionCard:hover .selectionIcon {
-  background: var(--color-blue-primary);
+  background: var(--color-orange-primary);
   color: var(--color-white);
   transform: scale(1.1);
 }

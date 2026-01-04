@@ -212,7 +212,7 @@
   padding: 0.75rem 2rem;
   border-radius: var(--radius-md);
   font-weight: 700;
-  background: var(--color-blue-primary);
+  background: var(--color-orange-primary);
   color: var(--color-white);
   border: none;
   cursor: pointer;
@@ -220,9 +220,9 @@
 }
 
 .confirmBtn:hover:not(:disabled) {
-  background: var(--color-blue-dark);
+  background: var(--color-orange-dark);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(35, 91, 204, 0.2);
+  box-shadow: 0 4px 10px rgba(251, 146, 60, 0.2);
 }
 
 .confirmBtn:disabled {
