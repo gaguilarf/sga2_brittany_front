@@ -310,64 +310,220 @@
   gap: 1rem;
 }
 
-/* Summary Styles */
-.summaryItem {
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--color-gray-100);
-}
-
-.summaryLabel {
-  font-weight: 600;
-  color: var(--color-gray-600);
-}
-
-.amount {
-  color: var(--color-blue-primary);
-  font-weight: 800;
-  font-size: 1.2rem;
-}
-
+/* Step 4: Summary & Confirmation Redesign */
 .confirmationWrapper {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
-.summaryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+.actionsHeader {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-.errorMessage {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: var(--color-error-light);
-  color: var(--color-error-dark);
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
   border-radius: var(--radius-md);
   font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  background: var(--color-white);
+  color: var(--color-gray-700);
+  border: 1.5px solid var(--color-gray-200);
 }
 
-.errorContainer {
-  margin-top: 1.5rem;
+.actionBtn:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+.confirmationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summaryCard {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-200);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.cardHeader {
+  background: var(--color-gray-50);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-gray-100);
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.summaryNote {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-  background: #eff6ff;
+.cardHeader h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-gray-800);
+  font-weight: 700;
+  flex: 1;
+}
+
+.cardContent {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.infoLabel {
+  color: var(--color-gray-500);
+  font-weight: 500;
+}
+
+.infoValue {
+  color: var(--color-gray-800);
+  font-weight: 600;
+  text-align: right;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.boletaBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--color-orange-50);
+  color: var(--color-orange-primary);
+  padding: 0.4rem 0.8rem;
   border-radius: var(--radius-md);
-  border-left: 4px solid var(--color-blue-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid var(--color-orange-100);
 }
 
-.summaryNote p {
+/* Payments Table */
+.paymentsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.paymentsTable th {
+  text-align: left;
+  padding: 1rem;
+  background: var(--color-gray-50);
+  color: var(--color-gray-600);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.paymentsTable td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-gray-100);
+  color: var(--color-gray-800);
+  font-weight: 500;
+}
+
+.textRight {
+  text-align: right;
+}
+
+.totalLabel {
+  padding: 1.5rem 1rem !important;
+  font-weight: 800 !important;
+  color: var(--color-gray-500) !important;
+  font-size: 1rem;
+  border: none !important;
+}
+
+.totalValue {
+  padding: 1.5rem 1rem !important;
+  font-weight: 800 !important;
+  color: var(--color-blue-primary) !important;
+  font-size: 1.4rem;
+  text-align: right;
+  border: none !important;
+}
+
+.confirmationNotice {
+  background: #eff6ff;
+  border-left: 4px solid var(--color-blue-primary);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+}
+
+.confirmationNotice p {
+  margin: 0;
   font-size: 0.9rem;
   color: var(--color-blue-dark);
-  margin: 0;
   line-height: 1.5;
+}
+
+/* Print Styles */
+@media print {
+  .actionsHeader,
+  .formFooter,
+  .stepperContainer,
+  .header,
+  .btnBack,
+  .btnNext,
+  .btnRegister {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    padding: 0 !important;
+  }
+
+  .matriculasContainer {
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .confirmationWrapper {
+    max-width: 100% !important;
+  }
+
+  .summaryCard {
+    box-shadow: none !important;
+    border: 1.5px solid #eee !important;
+    break-inside: avoid;
+  }
+
+  .cardHeader {
+    background: #f9f9f9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .boletaBadge {
+    border: 1px solid #ddd !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  .totalValue {
+    color: black !important;
+  }
 }
 
 /* Navigation Footer */
