@@ -1,4 +1,5 @@
 import styles from "../page.module.css";
+import { PAYMENT_TYPES } from "../../constants/PaymentTypes";
 
 interface Props {
   formData: any;
@@ -17,6 +18,11 @@ export const PaymentStep = ({
   addPayment,
   removePayment,
 }: Props) => {
+  // Get all currently selected payment types
+  const selectedTypes = formData.payments
+    .map((p: any) => p.tipo)
+    .filter(Boolean);
+
   return (
     <div className={styles.formGrid}>
       <div className={styles.columnFull}>
@@ -65,122 +71,139 @@ export const PaymentStep = ({
                 )}
               </div>
 
-              {formData.payments.map((payment: any, index: number) => (
-                <div key={index} className={styles.paymentItemCard}>
-                  <div className={styles.paymentItemHeader}>
-                    <h5>Pago #{index + 1}</h5>
-                    {formData.payments.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePayment(index)}
-                        className={styles.removeBtn}
-                        title="Eliminar este pago"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+              {formData.payments.map((payment: any, index: number) => {
+                // Determine which options to show for this specific row
+                const availableTypes = PAYMENT_TYPES.filter(
+                  (type) =>
+                    !selectedTypes.includes(type) || type === payment.tipo,
+                );
 
-                  <div className={styles.paymentRow}>
-                    <div className={styles.formGroup}>
-                      <div className={styles.inputWrapper}>
-                        <select
-                          value={payment.tipo}
-                          onChange={(e) =>
-                            handlePaymentChange(index, "tipo", e.target.value)
-                          }
-                          className={`${styles.select} ${
-                            errors[`payment_${index}_tipo`]
-                              ? styles.invalid
-                              : ""
-                          }`}
-                          required
+                return (
+                  <div key={index} className={styles.paymentItemCard}>
+                    <div className={styles.paymentItemHeader}>
+                      <h5>Pago #{index + 1}</h5>
+                      {formData.payments.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePayment(index)}
+                          className={styles.removeBtn}
+                          title="Eliminar este pago"
                         >
-                          <option value="">Seleccione tipo</option>
-                          <option value="Inscripción">Inscripción</option>
-                          <option value="Mensualidad">Mensualidad</option>
-                          <option value="Materiales">Materiales</option>
-                          <option value="Otro">Otro</option>
-                        </select>
-                        <label className={styles.labelFloating}>
-                          Tipo de Pago{" "}
-                          <span className={styles.required}>*</span>
-                        </label>
-                        {errors[`payment_${index}_tipo`] && (
-                          <span className={styles.errorText}>
-                            {errors[`payment_${index}_tipo`]}
-                          </span>
-                        )}
-                      </div>
+                          ✕
+                        </button>
+                      )}
                     </div>
 
-                    <div className={styles.formGroup}>
-                      <div className={styles.inputWrapper}>
-                        <select
-                          value={payment.metodo}
-                          onChange={(e) =>
-                            handlePaymentChange(index, "metodo", e.target.value)
-                          }
-                          className={`${styles.select} ${
-                            errors[`payment_${index}_metodo`]
-                              ? styles.invalid
-                              : ""
-                          }`}
-                          required
-                        >
-                          <option value="">Seleccione método</option>
-                          <option value="Efectivo">Efectivo</option>
-                          <option value="Transferencia">Transferencia</option>
-                          <option value="Tarjeta">Tarjeta</option>
-                          <option value="Yape/Plin">Yape/Plin</option>
-                        </select>
-                        <label className={styles.labelFloating}>
-                          Método de Pago{" "}
-                          <span className={styles.required}>*</span>
-                        </label>
-                        {errors[`payment_${index}_metodo`] && (
-                          <span className={styles.errorText}>
-                            {errors[`payment_${index}_metodo`]}
-                          </span>
-                        )}
+                    <div className={styles.paymentRow}>
+                      <div className={styles.formGroup}>
+                        <div className={styles.inputWrapper}>
+                          <select
+                            value={payment.tipo}
+                            onChange={(e) =>
+                              handlePaymentChange(index, "tipo", e.target.value)
+                            }
+                            className={`${styles.select} ${
+                              errors[`payment_${index}_tipo`]
+                                ? styles.invalid
+                                : ""
+                            }`}
+                            required
+                          >
+                            <option value="">Seleccione tipo</option>
+                            {availableTypes.map((type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ))}
+                          </select>
+                          <label className={styles.labelFloating}>
+                            Tipo de Pago{" "}
+                            <span className={styles.required}>*</span>
+                          </label>
+                          {errors[`payment_${index}_tipo`] && (
+                            <span className={styles.errorText}>
+                              {errors[`payment_${index}_tipo`]}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className={styles.formGroup}>
-                      <div className={styles.inputWrapper}>
-                        <input
-                          value={payment.monto}
-                          onChange={(e) =>
-                            handlePaymentChange(index, "monto", e.target.value)
-                          }
-                          type="number"
-                          placeholder="0.00"
-                          className={`${styles.input} ${
-                            errors[`payment_${index}_monto`]
-                              ? styles.invalid
-                              : ""
-                          }`}
-                          required
-                        />
-                        <label className={styles.labelFloating}>
-                          Monto S/. <span className={styles.required}>*</span>
-                        </label>
-                        {errors[`payment_${index}_monto`] && (
-                          <span className={styles.errorText}>
-                            {errors[`payment_${index}_monto`]}
-                          </span>
-                        )}
+                      <div className={styles.formGroup}>
+                        <div className={styles.inputWrapper}>
+                          <select
+                            value={payment.metodo}
+                            onChange={(e) =>
+                              handlePaymentChange(
+                                index,
+                                "metodo",
+                                e.target.value,
+                              )
+                            }
+                            className={`${styles.select} ${
+                              errors[`payment_${index}_metodo`]
+                                ? styles.invalid
+                                : ""
+                            }`}
+                            required
+                          >
+                            <option value="">Seleccione método</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Yape/Plin">Yape/Plin</option>
+                          </select>
+                          <label className={styles.labelFloating}>
+                            Método de Pago{" "}
+                            <span className={styles.required}>*</span>
+                          </label>
+                          {errors[`payment_${index}_metodo`] && (
+                            <span className={styles.errorText}>
+                              {errors[`payment_${index}_metodo`]}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <div className={styles.inputWrapper}>
+                          <input
+                            value={payment.monto}
+                            onChange={(e) =>
+                              handlePaymentChange(
+                                index,
+                                "monto",
+                                e.target.value,
+                              )
+                            }
+                            type="number"
+                            placeholder="0.00"
+                            className={`${styles.input} ${
+                              errors[`payment_${index}_monto`]
+                                ? styles.invalid
+                                : ""
+                            }`}
+                            required
+                          />
+                          <label className={styles.labelFloating}>
+                            Monto S/. <span className={styles.required}>*</span>
+                          </label>
+                          {errors[`payment_${index}_monto`] && (
+                            <span className={styles.errorText}>
+                              {errors[`payment_${index}_monto`]}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <button
                 type="button"
                 onClick={addPayment}
                 className={styles.addPaymentBtn}
-                disabled={formData.payments.length >= 4}
+                disabled={formData.payments.length >= PAYMENT_TYPES.length}
               >
                 + Agregar otro pago
               </button>

@@ -6,6 +6,11 @@ import { EnrollmentService } from "@/shared/services/api/enrollmentService";
 import { PaymentService } from "@/shared/services/api/paymentService";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { Student, Campus, Plan } from "../models/EnrollmentModels"; // Adjust path if needed
+import {
+  PREDEFINED_SCHEDULES,
+  PredefinedSchedule,
+} from "../constants/Schedules";
+import { PAYMENT_TYPES } from "../constants/PaymentTypes";
 
 export const useMatricula = () => {
   const { user } = useAuth();
@@ -58,6 +63,7 @@ export const useMatricula = () => {
     diaClase: "",
     horaInicio: "",
     horaFin: "",
+    scheduleOption: "",
   });
 
   useEffect(() => {
@@ -79,7 +85,7 @@ export const useMatricula = () => {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
 
@@ -115,6 +121,41 @@ export const useMatricula = () => {
         }));
         return;
       }
+    }
+
+    if (name === "scheduleOption") {
+      const selectedOption = value;
+      if (selectedOption === "Otro") {
+        setFormData((prev) => ({
+          ...prev,
+          scheduleOption: "Otro",
+          diaClase: "",
+          horaInicio: "",
+          horaFin: "",
+        }));
+      } else if (selectedOption) {
+        const predefined = PREDEFINED_SCHEDULES.find(
+          (s: PredefinedSchedule) => s.label === selectedOption,
+        );
+        if (predefined) {
+          setFormData((prev) => ({
+            ...prev,
+            scheduleOption: selectedOption,
+            diaClase: predefined.diaClase,
+            horaInicio: predefined.horaInicio,
+            horaFin: predefined.horaFin,
+          }));
+        }
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          scheduleOption: "",
+          diaClase: "",
+          horaInicio: "",
+          horaFin: "",
+        }));
+      }
+      return;
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -204,6 +245,7 @@ export const useMatricula = () => {
       diaClase: "",
       horaInicio: "",
       horaFin: "",
+      scheduleOption: "",
     });
     setErrors({});
   };
@@ -285,17 +327,19 @@ export const useMatricula = () => {
 
     if (step === 2) {
       if (!formData.campusId) newErrors.campusId = "Debe seleccionar una sede.";
-      if (!formData.planId) newErrors.planId = "Debe seleccionar un plan.";
-      if (!formData.modalidad)
-        newErrors.modalidad = "La modalidad es obligatoria.";
       if (!formData.nivel) newErrors.nivel = "El nivel es obligatorio.";
       if (!formData.tipoInscripcion)
         newErrors.tipoInscripcion = "Tipo de inscripción obligatorio.";
-      if (!formData.diaClase)
-        newErrors.diaClase = "Días de clase obligatorios.";
-      if (!formData.horaInicio)
-        newErrors.horaInicio = "Hora inicio obligatoria.";
-      if (!formData.horaFin) newErrors.horaFin = "Hora fin obligatoria.";
+      if (!formData.scheduleOption)
+        newErrors.scheduleOption = "Debe seleccionar un horario.";
+
+      if (formData.scheduleOption === "Otro") {
+        if (!formData.diaClase)
+          newErrors.diaClase = "Días de clase obligatorios.";
+        if (!formData.horaInicio)
+          newErrors.horaInicio = "Hora inicio obligatoria.";
+        if (!formData.horaFin) newErrors.horaFin = "Hora fin obligatoria.";
+      }
     }
 
     if (step === 3) {
@@ -361,7 +405,7 @@ export const useMatricula = () => {
       if (!isExistingStudent && !studentId) {
         // Try to find by DNI first to avoid "Already exists" error on retry
         const existingStudent = await StudentService.getByDni(
-          formData.dni
+          formData.dni,
         ).catch(() => null);
 
         if (existingStudent) {

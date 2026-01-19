@@ -511,7 +511,7 @@
     display: none !important;
   }
 
-  body {
+  .body {
     background: white !important;
     padding: 0 !important;
   }
