@@ -1,5 +1,5 @@
-import ConstructionPlaceholder from "@/shared/components/ConstructionPlaceholder";
+import PagosPage from "@/features/pagos/components/PagosPage";
 
-export default function PagosPage() {
-  return <ConstructionPlaceholder moduleName="Pagos" />;
+export default function Pagos() {
+  return <PagosPage />;
 }
