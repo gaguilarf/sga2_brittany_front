@@ -411,7 +411,10 @@ export const useMatricula = () => {
 
       // CelularAlumno/CelularApoderado: at least one is required
       if (!formData.celularAlumno && !formData.celularApoderado) {
-        newErrors.celularApoderado = "Celular apoderado obligatorio.";
+        newErrors.celularAlumno =
+          "Debe ingresar al menos un número de contacto.";
+        newErrors.celularApoderado =
+          "Debe ingresar al menos un número de contacto.";
       }
 
       if (!formData.email) newErrors.email = "El correo es obligatorio.";
@@ -558,13 +561,13 @@ export const useMatricula = () => {
           // Create new student if not found
           const newStudent = await StudentService.create({
             nombre: formData.nombre.trim(),
-            dni: formData.dni,
+            dni: formData.dni || undefined,
             fechaNacimiento: formData.fechaNacimiento || undefined,
             edad: formData.edad ? parseInt(formData.edad) : undefined,
-            distrito: formData.distrito,
-            celularAlumno: formData.celularAlumno,
-            celularApoderado: formData.celularApoderado,
-            correo: formData.email,
+            distrito: formData.distrito || undefined,
+            celularAlumno: formData.celularAlumno || undefined,
+            celularApoderado: formData.celularApoderado || undefined,
+            correo: formData.email || undefined,
           });
           studentId = newStudent.id;
         }
@@ -573,17 +576,20 @@ export const useMatricula = () => {
       // 2. Create Enrollment
       const enrollmentPayload: any = {
         studentId: studentId!,
-        campusId: parseInt(formData.campusId) || 0,
-        modalidad: formData.modalidad,
-        tipoInscripcion: formData.tipoInscripcion,
-        advisorId: user?.id || 0,
-        numeroBoleta: formData.numeroBoleta,
+        campusId: parseInt(formData.campusId) || undefined,
+        modalidad: formData.modalidad || undefined,
+        tipoInscripcion: formData.tipoInscripcion || undefined,
+        advisorId: user?.id || undefined,
+        numeroBoleta: formData.numeroBoleta || undefined,
         saldo: 0,
-        enrollmentType: formData.enrollmentType,
       };
 
+      if (formData.enrollmentType) {
+        enrollmentPayload.enrollmentType = formData.enrollmentType;
+      }
+
       if (formData.enrollmentType === "PLAN") {
-        enrollmentPayload.planId = parseInt(formData.planId) || 0;
+        enrollmentPayload.planId = parseInt(formData.planId) || undefined;
         enrollmentPayload.courseId = parseInt(formData.courseId) || undefined;
         enrollmentPayload.initialLevelId =
           parseInt(formData.initialLevelId) || undefined;
@@ -591,18 +597,20 @@ export const useMatricula = () => {
           parseInt(formData.initialCycleId) || undefined;
         enrollmentPayload.horario =
           `${formData.diaClase} ${formData.horaInicio}-${formData.horaFin}`.trim() ||
-          formData.horario;
+          formData.horario ||
+          undefined;
       } else {
-        enrollmentPayload.productId = parseInt(formData.productId) || 0;
+        enrollmentPayload.productId = parseInt(formData.productId) || undefined;
         const selectedProduct = products.find(
           (p) => p.id.toString() === formData.productId,
         );
         if (selectedProduct?.requiresExamDate) {
-          enrollmentPayload.examDate = formData.examDate;
+          enrollmentPayload.examDate = formData.examDate || undefined;
         } else {
           enrollmentPayload.horario =
             `${formData.diaClase} ${formData.horaInicio}-${formData.horaFin}`.trim() ||
-            formData.horario;
+            formData.horario ||
+            undefined;
         }
       }
 
@@ -638,7 +646,10 @@ export const useMatricula = () => {
         window.location.href = "/admin/dashboard";
       }, 1000);
     } catch (err: any) {
-      console.error(err);
+      console.error("Error completo:", err);
+      if (err.response) {
+        console.error("Data de respuesta de error:", err.response.data);
+      }
       let message =
         err.response?.data?.message ||
         err.message ||

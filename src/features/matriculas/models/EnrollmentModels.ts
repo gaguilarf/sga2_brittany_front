@@ -86,7 +86,7 @@ export interface Product {
 export interface CreateEnrollmentDto {
   studentId: number;
   campusId: number;
-  planId: number;
+  planId?: number;
   courseId?: number;
   modalidad?: string;
   horario?: string;
@@ -113,6 +113,9 @@ export interface EnrollmentResponse {
   initialLevelId?: number;
   initialCycleId?: number;
   tipoInscripcion?: string;
+  enrollmentType: "PLAN" | "PRODUCT";
+  productId?: number;
+  examDate?: string;
   advisorId: number;
   origen?: string;
   numeroBoleta?: string;

@@ -16,7 +16,11 @@ import {
   GraduationCap,
   Building2,
   Clock,
+  BookOpen,
+  Tag,
 } from "lucide-react";
+import { AcademicService } from "@/shared/services/api/academicService";
+import { ProductService } from "@/shared/services/api/productService";
 import {
   EnrollmentResponse,
   Campus,
@@ -45,6 +49,12 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
   const [payments, setPayments] = useState<PaymentResponse[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(true);
 
+  // Resolved names for display
+  const [courseName, setCourseName] = useState<string>("");
+  const [levelName, setLevelName] = useState<string>("");
+  const [cycleName, setCycleName] = useState<string>("");
+  const [productName, setProductName] = useState<string>("");
+
   useEffect(() => {
     fetchStudentDetails();
   }, [alumno.id]);
@@ -68,7 +78,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
       setAlumno(updatedAlumno);
 
       const enrollments = await EnrollmentService.getByStudentId(
-        parseInt(alumno.id)
+        parseInt(alumno.id),
       );
 
       if (enrollments.length > 0) {
@@ -82,15 +92,52 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
         ]);
 
         setCampus(
-          campuses.find((c) => c.id === activeEnrollment.campusId) || null
+          campuses.find((c) => c.id === activeEnrollment.campusId) || null,
         );
         setPlan(plans.find((p) => p.id === activeEnrollment.planId) || null);
         setPayments(
           paymentsData.sort(
             (a, b) =>
-              new Date(b.fechaPago).getTime() - new Date(a.fechaPago).getTime()
-          )
+              new Date(b.fechaPago).getTime() - new Date(a.fechaPago).getTime(),
+          ),
         );
+
+        // Resolve names based on enrollmentType
+        if (activeEnrollment.enrollmentType === "PLAN") {
+          const [courses, products] = await Promise.all([
+            AcademicService.getCourses(),
+            ProductService.getAll(),
+          ]);
+
+          if (activeEnrollment.courseId) {
+            const course = courses.find(
+              (c) => c.id === activeEnrollment.courseId,
+            );
+            if (course) {
+              setCourseName(course.name);
+              // Fetch levels for this course
+              const levels = await AcademicService.getLevelsByCourse(course.id);
+              const level = levels.find(
+                (l) => l.id === activeEnrollment.initialLevelId,
+              );
+              if (level) {
+                setLevelName(level.nombreNivel);
+                // Fetch cycles for this level
+                const cycles = await AcademicService.getCyclesByLevel(level.id);
+                const cycle = cycles.find(
+                  (cy) => cy.id === activeEnrollment.initialCycleId,
+                );
+                if (cycle) setCycleName(cycle.nombreCiclo);
+              }
+            }
+          }
+        } else if (activeEnrollment.enrollmentType === "PRODUCT") {
+          const products = await ProductService.getAll();
+          const product = products.find(
+            (p) => p.id === activeEnrollment.productId,
+          );
+          if (product) setProductName(product.name);
+        }
       }
       return updatedAlumno;
     } catch (error: any) {
@@ -341,7 +388,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
 
                     const updated = await StudentService.update(
                       parseInt(alumno.id),
-                      updateData
+                      updateData,
                     );
 
                     // Refresh data after update
@@ -361,7 +408,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
                         ? error
                         : JSON.stringify(
                             error,
-                            Object.getOwnPropertyNames(error)
+                            Object.getOwnPropertyNames(error),
                           ));
                     alert(`Error al actualizar los datos: ${errorMsg}`);
                   } finally {
@@ -401,9 +448,26 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
             </div>
             <div className={styles.profileInfo}>
               <h2>{alumno.nombre}</h2>
-              <p className={styles.courseText}>
-                {plan ? plan.name : "Sin curso asignado"}
-              </p>
+              <div className={styles.sidebarAcademicInfo}>
+                {enrollment ? (
+                  enrollment.enrollmentType === "PLAN" ? (
+                    <div className={styles.sidebarPlan}>
+                      <div className={styles.sidebarTitle}>{plan?.name}</div>
+                      <div className={styles.sidebarSubtitle}>
+                        {courseName} {levelName} {cycleName}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.sidebarProduct}>
+                      <div className={styles.sidebarTitle}>{productName}</div>
+                    </div>
+                  )
+                ) : (
+                  <span className={styles.noEnrollment}>
+                    Sin curso asignado
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className={styles.contactList}>
@@ -603,9 +667,27 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
             <div className={styles.academicBody}>
               <div className={styles.infoGrid}>
                 <div>
-                  <span className={styles.infoLabel}>Curso Actual</span>
                   <div className={styles.infoValue}>
-                    {plan ? plan.name : "N/A"}
+                    {enrollment ? (
+                      enrollment.enrollmentType === "PLAN" ? (
+                        <div className={styles.planInfo}>
+                          <span className={styles.typeTag}>PLAN</span>
+                          <div className={styles.mainTitle}>{plan?.name}</div>
+                          <div className={styles.subDetail}>
+                            {courseName} {levelName} {cycleName}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className={styles.productInfo}>
+                          <span className={styles.typeTagProduct}>
+                            PRODUCTO
+                          </span>
+                          <div className={styles.mainTitle}>{productName}</div>
+                        </div>
+                      )
+                    ) : (
+                      "N/A"
+                    )}
                   </div>
                 </div>
                 <div>
@@ -751,7 +833,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
                       - {obs.autor}, {obs.fecha}
                     </div>
                   </div>
-                )
+                ),
               )}
               <button className={styles.btnAddNote}>
                 <span>+</span> Añadir Nota

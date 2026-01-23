@@ -31,7 +31,7 @@ export interface Alumno {
 const mapStudentToAlumno = (
   s: Student,
   enrollments: EnrollmentResponse[] = [],
-  campuses: Campus[] = []
+  campuses: Campus[] = [],
 ): Alumno => {
   const studentEnrollments = enrollments.filter((e) => e.studentId === s.id);
   const latestEnrollment =
@@ -74,6 +74,9 @@ export default function AlumnosPage() {
   // States
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [allCampuses, setAllCampuses] = useState<Campus[]>([]);
+  const [allEnrollments, setAllEnrollments] = useState<EnrollmentResponse[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,10 +108,11 @@ export default function AlumnosPage() {
       ]);
 
       const mapped = studentsData.map((s) =>
-        mapStudentToAlumno(s, enrollmentsData, campusesData)
+        mapStudentToAlumno(s, enrollmentsData, campusesData),
       );
       setAlumnos(mapped);
       setAllCampuses(campusesData);
+      setAllEnrollments(enrollmentsData);
       setError(null);
 
       // Check URL for student detail after initial load
@@ -221,8 +225,10 @@ export default function AlumnosPage() {
 
         setAlumnos((prev) =>
           prev.map((a) =>
-            a.id === editForm.id ? mapStudentToAlumno(updated) : a
-          )
+            a.id === editForm.id
+              ? mapStudentToAlumno(updated, allEnrollments, allCampuses)
+              : a,
+          ),
         );
         setEditingId(null);
         setEditForm(null);
@@ -241,7 +247,7 @@ export default function AlumnosPage() {
   };
 
   const handleEditChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     if (!editForm) return;
     const { name, value } = e.target;
@@ -276,7 +282,7 @@ export default function AlumnosPage() {
 
   const handleUpdateAlumno = (updatedAlumno: Alumno) => {
     setAlumnos((prev) =>
-      prev.map((a) => (a.id === updatedAlumno.id ? updatedAlumno : a))
+      prev.map((a) => (a.id === updatedAlumno.id ? updatedAlumno : a)),
     );
     setSelectedAlumno(updatedAlumno);
   };
@@ -656,7 +662,7 @@ export default function AlumnosPage() {
               Mostrando{" "}
               {Math.min(
                 filteredAlumnos.length,
-                (currentPage - 1) * pageSize + 1
+                (currentPage - 1) * pageSize + 1,
               )}
               –{Math.min(filteredAlumnos.length, currentPage * pageSize)} de{" "}
               {filteredAlumnos.length} alumnos

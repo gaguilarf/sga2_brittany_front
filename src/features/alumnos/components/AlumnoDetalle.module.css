@@ -159,11 +159,58 @@
   margin-bottom: 0.25rem;
 }
 
-.courseText {
-  color: var(--color-orange-primary);
-  font-weight: 600;
-  font-size: 0.9rem;
+.sidebarAcademicInfo {
+  padding: 0 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+.sidebarPlan,
+.sidebarProduct {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sidebarLabel,
+.sidebarLabelProduct {
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.1rem 0.6rem;
+  border-radius: 12px;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.sidebarLabel {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+
+.sidebarLabelProduct {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #ffedd5;
+}
+
+.sidebarTitle {
+  font-weight: 700;
+  color: var(--color-blue-dark);
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.sidebarSubtitle {
+  font-size: 0.8rem;
+  color: var(--color-gray-500);
+  font-weight: 500;
+}
+
+.noEnrollment {
+  color: var(--color-gray-400);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .contactList {
@@ -302,6 +349,42 @@
   font-size: 1.1rem;
   color: var(--color-blue-dark);
   font-weight: 700;
+}
+
+.typeTag,
+.typeTagProduct {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.05em;
+}
+
+.typeTag {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+
+.typeTagProduct {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #ffedd5;
+}
+
+.mainTitle {
+  font-size: 1.1rem;
+  color: var(--color-blue-dark);
+  line-height: 1.2;
+}
+
+.subDetail {
+  font-size: 0.85rem;
+  color: var(--color-gray-500);
+  font-weight: 500;
+  margin-top: 0.2rem;
 }
 
 .teacherInfo {

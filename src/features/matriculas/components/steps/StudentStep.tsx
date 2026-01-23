@@ -175,13 +175,19 @@ export const StudentStep = ({
                   onChange={handleChange}
                   type="text"
                   placeholder=" "
-                  className={styles.input}
-                  required
+                  className={`${styles.input} ${
+                    errors.celularAlumno ? styles.invalid : ""
+                  }`}
                   disabled={isExistingStudent}
                 />
                 <label htmlFor="celularAlumno" className={styles.label}>
-                  Celular del Alumno <span className={styles.required}>*</span>
+                  Celular del Alumno
                 </label>
+                {errors.celularAlumno && (
+                  <span className={styles.errorText}>
+                    {errors.celularAlumno}
+                  </span>
+                )}
               </div>
             </div>
             <div className={styles.formGroup}>
@@ -199,10 +205,7 @@ export const StudentStep = ({
                   disabled={isExistingStudent}
                 />
                 <label htmlFor="celularApoderado" className={styles.label}>
-                  Celular del Apoderado{" "}
-                  {!formData.celularAlumno && (
-                    <span className={styles.required}>*</span>
-                  )}
+                  Celular del Apoderado
                 </label>
                 {errors.celularApoderado && (
                   <span className={styles.errorText}>
