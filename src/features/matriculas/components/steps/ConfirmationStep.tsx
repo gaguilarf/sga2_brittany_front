@@ -1,36 +1,49 @@
 import styles from "../page.module.css";
-import { Campus, Plan } from "@/features/matriculas/models/EnrollmentModels";
 import {
-  User,
-  IdCard,
-  MapPin,
-  BookOpen,
-  Clock,
-  CreditCard,
-  Receipt,
-  Printer,
-  FileText,
-  Calendar,
-  Phone,
-} from "lucide-react";
+  Campus,
+  Plan,
+  Course,
+  Level,
+  Cycle,
+} from "@/features/matriculas/models/EnrollmentModels";
+import { User, BookOpen, CreditCard, Receipt, Printer } from "lucide-react";
 import { useAuth } from "@/shared/contexts/AuthContext";
 
 interface Props {
   formData: any;
   campuses: Campus[];
   plans: Plan[];
+  courses: Course[];
+  levels: Level[];
+  cycles: Cycle[];
 }
 
-export const ConfirmationStep = ({ formData, campuses, plans }: Props) => {
+export const ConfirmationStep = ({
+  formData,
+  campuses,
+  plans,
+  courses,
+  levels,
+  cycles,
+}: Props) => {
   const { user } = useAuth();
 
   const selectedCampus = campuses.find(
-    (c) => c.id.toString() === formData.campusId
+    (c) => c.id.toString() === formData.campusId,
   );
   const selectedPlan = plans.find((p) => p.id.toString() === formData.planId);
+  const selectedCourse = courses.find(
+    (c) => c.id.toString() === formData.courseId,
+  );
+  const selectedLevel = levels.find(
+    (l) => l.id.toString() === formData.initialLevelId,
+  );
+  const selectedCycle = cycles.find(
+    (c) => c.id.toString() === formData.initialCycleId,
+  );
   const totalPaid = formData.payments.reduce(
     (acc: number, p: any) => acc + (Number(p.monto) || 0),
-    0
+    0,
   );
   const currentDate = new Date().toLocaleDateString("es-PE", {
     day: "2-digit",
@@ -114,10 +127,21 @@ export const ConfirmationStep = ({ formData, campuses, plans }: Props) => {
                 </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Modalidad/Nivel:</span>
+                <span className={styles.infoLabel}>Curso:</span>
                 <span className={styles.infoValue}>
-                  {formData.modalidad} - Nivel {formData.nivel}
+                  {selectedCourse?.name || "N/A"}
                 </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Nivel / Ciclo:</span>
+                <span className={styles.infoValue}>
+                  {selectedLevel?.nombreNivel || "N/A"} -{" "}
+                  {selectedCycle?.nombreCiclo || "N/A"}
+                </span>
+              </div>
+              <div className={styles.infoRow}>
+                <span className={styles.infoLabel}>Modalidad:</span>
+                <span className={styles.infoValue}>{formData.modalidad}</span>
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Horario:</span>

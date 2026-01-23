@@ -1,5 +1,11 @@
 import styles from "../page.module.css";
-import { Campus, Plan } from "@/features/matriculas/models/EnrollmentModels";
+import {
+  Campus,
+  Plan,
+  Course,
+  Level,
+  Cycle,
+} from "@/features/matriculas/models/EnrollmentModels";
 import { PREDEFINED_SCHEDULES } from "../../constants/Schedules";
 
 interface Props {
@@ -10,6 +16,9 @@ interface Props {
   ) => void;
   campuses: Campus[];
   plans: Plan[];
+  courses: Course[];
+  levels: Level[];
+  cycles: Cycle[];
 }
 
 export const ConfigurationStep = ({
@@ -18,6 +27,9 @@ export const ConfigurationStep = ({
   handleChange,
   campuses,
   plans,
+  courses,
+  levels,
+  cycles,
 }: Props) => {
   const timeOptions = Array.from({ length: 60 }, (_, i) => {
     const totalMinutes = i * 15 + 7 * 60; // Start at 7:00 AM
@@ -82,12 +94,12 @@ export const ConfigurationStep = ({
                   </option>
                   {plans.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} {p.costoPension ? `- S/.${p.costoPension}` : ""}
+                      {p.name}
                     </option>
                   ))}
                 </select>
                 <label htmlFor="planId" className={styles.label}>
-                  Plan Comercial <span className={styles.required}>*</span>
+                  Plan <span className={styles.required}>*</span>
                 </label>
                 {errors.planId && (
                   <span className={styles.errorText}>{errors.planId}</span>
@@ -122,24 +134,99 @@ export const ConfigurationStep = ({
             </div>
             <div className={styles.formGroup}>
               <div className={styles.inputWrapper}>
-                <input
-                  name="nivel"
-                  id="nivel"
-                  value={formData.nivel}
+                <select
+                  name="courseId"
+                  id="courseId"
+                  value={formData.courseId}
                   onChange={handleChange}
-                  type="text"
-                  placeholder="Ej. Básico A1"
-                  className={`${styles.input} ${
-                    errors.nivel ? styles.invalid : ""
+                  className={`${styles.select} ${
+                    errors.courseId ? styles.invalid : ""
                   }`}
                   required
-                />
-                <label htmlFor="nivel" className={styles.label}>
-                  Nivel / Ciclo <span className={styles.required}>*</span>
+                >
+                  <option value="" disabled hidden>
+                    Seleccione un curso
+                  </option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="courseId" className={styles.label}>
+                  Curso <span className={styles.required}>*</span>
                 </label>
-                {errors.nivel && (
-                  <span className={styles.errorText}>{errors.nivel}</span>
+                {errors.courseId && (
+                  <span className={styles.errorText}>{errors.courseId}</span>
                 )}
+              </div>
+            </div>
+
+            <div className={styles.row}>
+              <div className={styles.formGroup}>
+                <div className={styles.inputWrapper}>
+                  <select
+                    name="initialLevelId"
+                    id="initialLevelId"
+                    value={formData.initialLevelId}
+                    onChange={handleChange}
+                    className={`${styles.select} ${
+                      errors.initialLevelId ? styles.invalid : ""
+                    }`}
+                    disabled={!formData.courseId}
+                    required
+                  >
+                    <option value="" disabled hidden>
+                      Seleccione nivel
+                    </option>
+                    {levels.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.nombreNivel}
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="initialLevelId" className={styles.label}>
+                    Nivel <span className={styles.required}>*</span>
+                  </label>
+                  {errors.initialLevelId && (
+                    <span className={styles.errorText}>
+                      {errors.initialLevelId}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <div className={styles.inputWrapper}>
+                  <select
+                    name="initialCycleId"
+                    id="initialCycleId"
+                    value={formData.initialCycleId}
+                    onChange={handleChange}
+                    className={`${styles.select} ${
+                      errors.initialCycleId ? styles.invalid : ""
+                    }`}
+                    disabled={!formData.initialLevelId}
+                    required
+                  >
+                    <option value="" disabled hidden>
+                      Seleccione ciclo
+                    </option>
+                    {cycles.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombreCiclo}
+                      </option>
+                    ))}
+                  </select>
+                  <label htmlFor="initialCycleId" className={styles.label}>
+                    Ciclo <span className={styles.required}>*</span>
+                  </label>
+                  {errors.initialCycleId && (
+                    <span className={styles.errorText}>
+                      {errors.initialCycleId}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className={styles.formGroup}>

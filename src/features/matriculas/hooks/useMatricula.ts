@@ -4,8 +4,16 @@ import { CampusService } from "@/shared/services/api/campusService";
 import { PlanService } from "@/shared/services/api/planService";
 import { EnrollmentService } from "@/shared/services/api/enrollmentService";
 import { PaymentService } from "@/shared/services/api/paymentService";
+import { AcademicService } from "@/shared/services/api/academicService";
 import { useAuth } from "@/shared/contexts/AuthContext";
-import { Student, Campus, Plan } from "../models/EnrollmentModels"; // Adjust path if needed
+import {
+  Student,
+  Campus,
+  Plan,
+  Course,
+  Level,
+  Cycle,
+} from "../models/EnrollmentModels"; // Adjust path if needed
 import {
   PREDEFINED_SCHEDULES,
   PredefinedSchedule,
@@ -27,6 +35,9 @@ export const useMatricula = () => {
   // Static data
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [cycles, setCycles] = useState<Cycle[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const [formData, setFormData] = useState({
@@ -46,9 +57,11 @@ export const useMatricula = () => {
     planId: "",
 
     // Step 3: Configuración Académica
+    courseId: "",
+    initialLevelId: "",
+    initialCycleId: "",
     modalidad: "Virtual",
     horario: "",
-    nivel: "",
     tipoInscripcion: "",
 
     // Step 4: Pago (múltiples pagos)
@@ -69,12 +82,14 @@ export const useMatricula = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [activeCampuses, activePlans] = await Promise.all([
+        const [activeCampuses, activePlans, activeCourses] = await Promise.all([
           CampusService.getActive(),
           PlanService.getActive(),
+          AcademicService.getCourses(),
         ]);
         setCampuses(activeCampuses);
         setPlans(activePlans);
+        setCourses(activeCourses);
       } catch (err) {
         console.error("Error fetching static data:", err);
       }
@@ -93,6 +108,40 @@ export const useMatricula = () => {
       const newErrors = { ...errors };
       delete newErrors[name];
       setErrors(newErrors);
+    }
+
+    if (name === "courseId") {
+      setFormData((prev) => ({
+        ...prev,
+        courseId: value,
+        initialLevelId: "",
+        initialCycleId: "",
+      }));
+      if (value) {
+        AcademicService.getLevelsByCourse(parseInt(value)).then((res) =>
+          setLevels(res),
+        );
+      } else {
+        setLevels([]);
+      }
+      setCycles([]);
+      return;
+    }
+
+    if (name === "initialLevelId") {
+      setFormData((prev) => ({
+        ...prev,
+        initialLevelId: value,
+        initialCycleId: "",
+      }));
+      if (value) {
+        AcademicService.getCyclesByLevel(parseInt(value)).then((res) =>
+          setCycles(res),
+        );
+      } else {
+        setCycles([]);
+      }
+      return;
     }
 
     if (name === "fechaNacimiento") {
@@ -236,9 +285,11 @@ export const useMatricula = () => {
       email: "",
       campusId: "",
       planId: "",
+      courseId: "",
+      initialLevelId: "",
+      initialCycleId: "",
       modalidad: "Virtual",
       horario: "",
-      nivel: "",
       tipoInscripcion: "",
       payments: [{ tipo: "", metodo: "", monto: "" }],
       numeroBoleta: "",
@@ -327,7 +378,12 @@ export const useMatricula = () => {
 
     if (step === 2) {
       if (!formData.campusId) newErrors.campusId = "Debe seleccionar una sede.";
-      if (!formData.nivel) newErrors.nivel = "El nivel es obligatorio.";
+      if (!formData.planId) newErrors.planId = "Debe seleccionar un plan.";
+      if (!formData.courseId) newErrors.courseId = "Debe seleccionar un curso.";
+      if (!formData.initialLevelId)
+        newErrors.initialLevelId = "Debe seleccionar un nivel.";
+      if (!formData.initialCycleId)
+        newErrors.initialCycleId = "Debe seleccionar un ciclo.";
       if (!formData.tipoInscripcion)
         newErrors.tipoInscripcion = "Tipo de inscripción obligatorio.";
       if (!formData.scheduleOption)
@@ -373,6 +429,17 @@ export const useMatricula = () => {
             newErrors[`payment_${index}_monto`] = "Monto inválido.";
           }
         });
+
+        // Validar que haya al menos un pago de Inscripción para alumnos nuevos
+        if (!isExistingStudent) {
+          const hasInscripcion = formData.payments.some(
+            (payment: any) => payment.tipo === "Inscripción",
+          );
+          if (!hasInscripcion) {
+            newErrors.payments =
+              "Debe incluir al menos un pago de Inscripción para alumnos nuevos.";
+          }
+        }
       }
     }
 
@@ -431,11 +498,13 @@ export const useMatricula = () => {
         studentId: studentId!,
         campusId: parseInt(formData.campusId) || 0,
         planId: parseInt(formData.planId) || 0,
+        courseId: parseInt(formData.courseId) || undefined,
         modalidad: formData.modalidad,
         horario:
           `${formData.diaClase} ${formData.horaInicio}-${formData.horaFin}`.trim() ||
           formData.horario,
-        nivel: formData.nivel,
+        initialLevelId: parseInt(formData.initialLevelId) || undefined,
+        initialCycleId: parseInt(formData.initialCycleId) || undefined,
         tipoInscripcion: formData.tipoInscripcion,
         advisorId: user?.id || 0,
         numeroBoleta: formData.numeroBoleta,
@@ -495,6 +564,9 @@ export const useMatricula = () => {
     errors,
     campuses,
     plans,
+    courses,
+    levels,
+    cycles,
     selectedStudent,
     formData,
     handleInputChange,

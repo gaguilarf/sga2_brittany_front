@@ -52,13 +52,38 @@ export interface Plan {
   active: boolean;
 }
 
+export interface Course {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
+export interface Level {
+  id: number;
+  courseId: number;
+  nombreNivel: string;
+  orden: number;
+  duracionMeses: number;
+  active: boolean;
+}
+
+export interface Cycle {
+  id: number;
+  levelId: number;
+  nombreCiclo: string;
+  orden: number;
+  active: boolean;
+}
+
 export interface CreateEnrollmentDto {
   studentId: number;
   campusId: number;
   planId: number;
+  courseId?: number;
   modalidad?: string;
   horario?: string;
-  nivel?: string;
+  initialLevelId?: number;
+  initialCycleId?: number;
   tipoInscripcion?: string;
   advisorId: number;
   origen?: string;
@@ -71,9 +96,11 @@ export interface EnrollmentResponse {
   studentId: number;
   campusId: number;
   planId: number;
+  courseId?: number;
   modalidad?: string;
   horario?: string;
-  nivel?: string;
+  initialLevelId?: number;
+  initialCycleId?: number;
   tipoInscripcion?: string;
   advisorId: number;
   origen?: string;

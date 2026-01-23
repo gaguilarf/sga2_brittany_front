@@ -18,6 +18,9 @@ export default function MatriculasPage() {
     errors,
     campuses,
     plans,
+    courses,
+    levels,
+    cycles,
     selectedStudent,
     formData,
     handleInputChange,
@@ -57,8 +60,8 @@ export default function MatriculasPage() {
           {enrollmentFlow === "selection"
             ? "Registro de Matrícula"
             : isExistingStudent
-            ? `Matrícula – ${formData.nombre}`
-            : "Registro de Matrícula"}
+              ? `Matrícula – ${formData.nombre}`
+              : "Registro de Matrícula"}
         </h1>
         <p className={styles.pageDescription}>
           {enrollmentFlow === "selection" &&
@@ -166,6 +169,9 @@ export default function MatriculasPage() {
                 handleChange={handleInputChange}
                 campuses={campuses}
                 plans={plans}
+                courses={courses}
+                levels={levels}
+                cycles={cycles}
               />
             )}
 
@@ -185,6 +191,9 @@ export default function MatriculasPage() {
                 formData={formData}
                 campuses={campuses}
                 plans={plans}
+                courses={courses}
+                levels={levels}
+                cycles={cycles}
               />
             )}
 
