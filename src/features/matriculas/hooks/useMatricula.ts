@@ -5,6 +5,7 @@ import { PlanService } from "@/shared/services/api/planService";
 import { EnrollmentService } from "@/shared/services/api/enrollmentService";
 import { PaymentService } from "@/shared/services/api/paymentService";
 import { AcademicService } from "@/shared/services/api/academicService";
+import { ProductService } from "@/shared/services/api/productService";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import {
   Student,
@@ -13,6 +14,7 @@ import {
   Course,
   Level,
   Cycle,
+  Product,
 } from "../models/EnrollmentModels"; // Adjust path if needed
 import {
   PREDEFINED_SCHEDULES,
@@ -38,6 +40,7 @@ export const useMatricula = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const [formData, setFormData] = useState({
@@ -64,6 +67,11 @@ export const useMatricula = () => {
     horario: "",
     tipoInscripcion: "",
 
+    // Enrollment Type (Plan vs Product)
+    enrollmentType: "" as "PLAN" | "PRODUCT" | "",
+    productId: "",
+    examDate: "",
+
     // Step 4: Pago (múltiples pagos)
     payments: [{ tipo: "", metodo: "", monto: "" }] as Array<{
       tipo: string;
@@ -82,14 +90,17 @@ export const useMatricula = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [activeCampuses, activePlans, activeCourses] = await Promise.all([
-          CampusService.getActive(),
-          PlanService.getActive(),
-          AcademicService.getCourses(),
-        ]);
+        const [activeCampuses, activePlans, activeCourses, activeProducts] =
+          await Promise.all([
+            CampusService.getActive(),
+            PlanService.getActive(),
+            AcademicService.getCourses(),
+            ProductService.getActive(),
+          ]);
         setCampuses(activeCampuses);
         setPlans(activePlans);
         setCourses(activeCourses);
+        setProducts(activeProducts);
       } catch (err) {
         console.error("Error fetching static data:", err);
       }
@@ -210,6 +221,35 @@ export const useMatricula = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleEnrollmentTypeChange = (type: "PLAN" | "PRODUCT") => {
+    if (type === "PLAN") {
+      // Limpiar campos de producto
+      setFormData((prev) => ({
+        ...prev,
+        enrollmentType: "PLAN",
+        productId: "",
+        examDate: "",
+      }));
+    } else {
+      // Limpiar campos de plan y resetear campos comunes si es necesario
+      setFormData((prev) => ({
+        ...prev,
+        enrollmentType: "PRODUCT",
+        planId: "",
+        courseId: "",
+        initialLevelId: "",
+        initialCycleId: "",
+        // Limpiar horario al cambiar a producto por si acaso el producto requiere fecha de examen
+        scheduleOption: "",
+        diaClase: "",
+        horaInicio: "",
+        horaFin: "",
+      }));
+    }
+    // Limpiar errores al cambiar de tipo
+    setErrors({});
+  };
+
   const handleSearchStudent = async () => {
     if (!formData.dni || formData.dni.length < 8) return;
     setLoading(true);
@@ -291,6 +331,9 @@ export const useMatricula = () => {
       modalidad: "Virtual",
       horario: "",
       tipoInscripcion: "",
+      enrollmentType: "" as "PLAN" | "PRODUCT" | "",
+      productId: "",
+      examDate: "",
       payments: [{ tipo: "", metodo: "", monto: "" }],
       numeroBoleta: "",
       diaClase: "",
@@ -378,23 +421,57 @@ export const useMatricula = () => {
 
     if (step === 2) {
       if (!formData.campusId) newErrors.campusId = "Debe seleccionar una sede.";
-      if (!formData.planId) newErrors.planId = "Debe seleccionar un plan.";
-      if (!formData.courseId) newErrors.courseId = "Debe seleccionar un curso.";
-      if (!formData.initialLevelId)
-        newErrors.initialLevelId = "Debe seleccionar un nivel.";
-      if (!formData.initialCycleId)
-        newErrors.initialCycleId = "Debe seleccionar un ciclo.";
-      if (!formData.tipoInscripcion)
-        newErrors.tipoInscripcion = "Tipo de inscripción obligatorio.";
-      if (!formData.scheduleOption)
-        newErrors.scheduleOption = "Debe seleccionar un horario.";
 
-      if (formData.scheduleOption === "Otro") {
-        if (!formData.diaClase)
-          newErrors.diaClase = "Días de clase obligatorios.";
-        if (!formData.horaInicio)
-          newErrors.horaInicio = "Hora inicio obligatoria.";
-        if (!formData.horaFin) newErrors.horaFin = "Hora fin obligatoria.";
+      if (formData.enrollmentType === "PLAN") {
+        // Validaciones para matrícula por Plan
+        if (!formData.planId) newErrors.planId = "Debe seleccionar un plan.";
+        if (!formData.courseId)
+          newErrors.courseId = "Debe seleccionar un curso.";
+        if (!formData.initialLevelId)
+          newErrors.initialLevelId = "Debe seleccionar un nivel.";
+        if (!formData.initialCycleId)
+          newErrors.initialCycleId = "Debe seleccionar un ciclo.";
+        if (!formData.tipoInscripcion)
+          newErrors.tipoInscripcion = "Tipo de inscripción obligatorio.";
+        if (!formData.scheduleOption)
+          newErrors.scheduleOption = "Debe seleccionar un horario.";
+
+        if (formData.scheduleOption === "Otro") {
+          if (!formData.diaClase)
+            newErrors.diaClase = "Días de clase obligatorios.";
+          if (!formData.horaInicio)
+            newErrors.horaInicio = "Hora inicio obligatoria.";
+          if (!formData.horaFin) newErrors.horaFin = "Hora fin obligatoria.";
+        }
+      } else if (formData.enrollmentType === "PRODUCT") {
+        // Validaciones para matrícula por Producto
+        if (!formData.productId)
+          newErrors.productId = "Debe seleccionar un producto.";
+        if (!formData.tipoInscripcion)
+          newErrors.tipoInscripcion = "Tipo de inscripción obligatorio.";
+
+        // Validar horario o fecha de examen según el producto
+        const selectedProduct = products.find(
+          (p) => p.id.toString() === formData.productId,
+        );
+        if (selectedProduct) {
+          if (selectedProduct.requiresExamDate) {
+            if (!formData.examDate)
+              newErrors.examDate = "Fecha de examen obligatoria.";
+          } else if (selectedProduct.requiresSchedule) {
+            if (!formData.scheduleOption)
+              newErrors.scheduleOption = "Debe seleccionar un horario.";
+
+            if (formData.scheduleOption === "Otro") {
+              if (!formData.diaClase)
+                newErrors.diaClase = "Días de clase obligatorios.";
+              if (!formData.horaInicio)
+                newErrors.horaInicio = "Hora inicio obligatoria.";
+              if (!formData.horaFin)
+                newErrors.horaFin = "Hora fin obligatoria.";
+            }
+          }
+        }
       }
     }
 
@@ -494,22 +571,43 @@ export const useMatricula = () => {
       }
 
       // 2. Create Enrollment
-      const enrollment = await EnrollmentService.create({
+      const enrollmentPayload: any = {
         studentId: studentId!,
         campusId: parseInt(formData.campusId) || 0,
-        planId: parseInt(formData.planId) || 0,
-        courseId: parseInt(formData.courseId) || undefined,
         modalidad: formData.modalidad,
-        horario:
-          `${formData.diaClase} ${formData.horaInicio}-${formData.horaFin}`.trim() ||
-          formData.horario,
-        initialLevelId: parseInt(formData.initialLevelId) || undefined,
-        initialCycleId: parseInt(formData.initialCycleId) || undefined,
         tipoInscripcion: formData.tipoInscripcion,
         advisorId: user?.id || 0,
         numeroBoleta: formData.numeroBoleta,
         saldo: 0,
-      });
+        enrollmentType: formData.enrollmentType,
+      };
+
+      if (formData.enrollmentType === "PLAN") {
+        enrollmentPayload.planId = parseInt(formData.planId) || 0;
+        enrollmentPayload.courseId = parseInt(formData.courseId) || undefined;
+        enrollmentPayload.initialLevelId =
+          parseInt(formData.initialLevelId) || undefined;
+        enrollmentPayload.initialCycleId =
+          parseInt(formData.initialCycleId) || undefined;
+        enrollmentPayload.horario =
+          `${formData.diaClase} ${formData.horaInicio}-${formData.horaFin}`.trim() ||
+          formData.horario;
+      } else {
+        enrollmentPayload.productId = parseInt(formData.productId) || 0;
+        const selectedProduct = products.find(
+          (p) => p.id.toString() === formData.productId,
+        );
+        if (selectedProduct?.requiresExamDate) {
+          enrollmentPayload.examDate = formData.examDate;
+        } else {
+          enrollmentPayload.horario =
+            `${formData.diaClase} ${formData.horaInicio}-${formData.horaFin}`.trim() ||
+            formData.horario;
+        }
+      }
+
+      console.log("Sending Enrollment Payload:", enrollmentPayload);
+      const enrollment = await EnrollmentService.create(enrollmentPayload);
 
       // 3. Create Payments
       const now = new Date();
@@ -567,9 +665,11 @@ export const useMatricula = () => {
     courses,
     levels,
     cycles,
+    products,
     selectedStudent,
     formData,
     handleInputChange,
+    handleEnrollmentTypeChange,
     handleSearchStudent,
     addPayment,
     removePayment,

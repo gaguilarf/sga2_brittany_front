@@ -5,6 +5,7 @@ import {
   Course,
   Level,
   Cycle,
+  Product,
 } from "@/features/matriculas/models/EnrollmentModels";
 import { User, BookOpen, CreditCard, Receipt, Printer } from "lucide-react";
 import { useAuth } from "@/shared/contexts/AuthContext";
@@ -16,6 +17,7 @@ interface Props {
   courses: Course[];
   levels: Level[];
   cycles: Cycle[];
+  products: Product[];
 }
 
 export const ConfirmationStep = ({
@@ -25,6 +27,7 @@ export const ConfirmationStep = ({
   courses,
   levels,
   cycles,
+  products,
 }: Props) => {
   const { user } = useAuth();
 
@@ -32,6 +35,9 @@ export const ConfirmationStep = ({
     (c) => c.id.toString() === formData.campusId,
   );
   const selectedPlan = plans.find((p) => p.id.toString() === formData.planId);
+  const selectedProduct = products.find(
+    (p) => p.id.toString() === formData.productId,
+  );
   const selectedCourse = courses.find(
     (c) => c.id.toString() === formData.courseId,
   );
@@ -115,40 +121,78 @@ export const ConfirmationStep = ({
             </div>
             <div className={styles.cardContent}>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Programa/Plan:</span>
-                <span className={styles.infoValue}>
-                  {selectedPlan?.name || "N/A"}
-                </span>
-              </div>
-              <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Sede:</span>
                 <span className={styles.infoValue}>
                   {selectedCampus?.name || "N/A"}
                 </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Curso:</span>
+                <span className={styles.infoLabel}>Tipo de Matrícula:</span>
                 <span className={styles.infoValue}>
-                  {selectedCourse?.name || "N/A"}
+                  {formData.enrollmentType === "PLAN"
+                    ? "Plan Académico"
+                    : "Producto / Servicio"}
                 </span>
               </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Nivel / Ciclo:</span>
-                <span className={styles.infoValue}>
-                  {selectedLevel?.nombreNivel || "N/A"} -{" "}
-                  {selectedCycle?.nombreCiclo || "N/A"}
-                </span>
-              </div>
+
+              {formData.enrollmentType === "PLAN" ? (
+                <>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Programa/Plan:</span>
+                    <span className={styles.infoValue}>
+                      {selectedPlan?.name || "N/A"}
+                    </span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Curso:</span>
+                    <span className={styles.infoValue}>
+                      {selectedCourse?.name || "N/A"}
+                    </span>
+                  </div>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Nivel / Ciclo:</span>
+                    <span className={styles.infoValue}>
+                      {selectedLevel?.nombreNivel || "N/A"} -{" "}
+                      {selectedCycle?.nombreCiclo || "N/A"}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.infoRow}>
+                    <span className={styles.infoLabel}>Producto:</span>
+                    <span className={styles.infoValue}>
+                      {selectedProduct?.name || "N/A"}
+                    </span>
+                  </div>
+                  {formData.examDate && (
+                    <div className={styles.infoRow}>
+                      <span className={styles.infoLabel}>Fecha de Examen:</span>
+                      <span className={styles.infoValue}>
+                        {formData.examDate}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Modalidad:</span>
                 <span className={styles.infoValue}>{formData.modalidad}</span>
               </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Horario:</span>
-                <span className={styles.infoValue}>
-                  {formData.diaClase} {formData.horaInicio}-{formData.horaFin}
-                </span>
-              </div>
+
+              {(!selectedProduct?.requiresExamDate ||
+                formData.enrollmentType === "PLAN") && (
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Horario:</span>
+                  <span className={styles.infoValue}>
+                    {formData.scheduleOption === "Otro"
+                      ? `${formData.diaClase} ${formData.horaInicio}-${formData.horaFin}`
+                      : formData.scheduleOption || "N/A"}
+                  </span>
+                </div>
+              )}
+
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Asesor:</span>
                 <span className={styles.infoValue}>

@@ -75,6 +75,14 @@ export interface Cycle {
   active: boolean;
 }
 
+export interface Product {
+  id: number;
+  name: string;
+  requiresSchedule: boolean;
+  requiresExamDate: boolean;
+  active: boolean;
+}
+
 export interface CreateEnrollmentDto {
   studentId: number;
   campusId: number;
@@ -89,6 +97,9 @@ export interface CreateEnrollmentDto {
   origen?: string;
   numeroBoleta?: string;
   saldo?: number;
+  enrollmentType?: "PLAN" | "PRODUCT";
+  productId?: number;
+  examDate?: string;
 }
 
 export interface EnrollmentResponse {

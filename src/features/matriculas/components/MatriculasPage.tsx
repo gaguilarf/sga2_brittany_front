@@ -21,9 +21,11 @@ export default function MatriculasPage() {
     courses,
     levels,
     cycles,
+    products,
     selectedStudent,
     formData,
     handleInputChange,
+    handleEnrollmentTypeChange,
     handleSearchStudent,
     addPayment,
     removePayment,
@@ -167,11 +169,13 @@ export default function MatriculasPage() {
                 formData={formData}
                 errors={errors}
                 handleChange={handleInputChange}
+                handleEnrollmentTypeChange={handleEnrollmentTypeChange}
                 campuses={campuses}
                 plans={plans}
                 courses={courses}
                 levels={levels}
                 cycles={cycles}
+                products={products}
               />
             )}
 
@@ -194,6 +198,7 @@ export default function MatriculasPage() {
                 courses={courses}
                 levels={levels}
                 cycles={cycles}
+                products={products}
               />
             )}
 

@@ -860,3 +860,55 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Enrollment Type Toggle */
+.enrollmentTypeToggle {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.toggleBtn {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--color-gray-200);
+  background: var(--color-white);
+  color: var(--color-gray-500);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  flex: 1;
+  max-width: 200px;
+}
+
+.toggleBtn:hover {
+  border-color: var(--color-blue-primary);
+  color: var(--color-blue-primary);
+  background: var(--color-blue-50);
+}
+
+.toggleBtn.active {
+  background: var(--color-blue-primary);
+  color: var(--color-white);
+  border-color: var(--color-blue-primary);
+  box-shadow: 0 4px 6px rgba(35, 91, 204, 0.2);
+}
+
+.flowContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
