@@ -146,3 +146,15 @@ export interface PaymentResponse {
   campusId: number;
   createdAt: string;
 }
+export interface DebtResponse {
+  id: number;
+  enrollmentId: number;
+  tipoDeuda: string;
+  concepto: string;
+  monto: number;
+  fechaVencimiento: string;
+  mesAplicado?: string;
+  estado: "PENDIENTE" | "PAGADO_PARCIAL" | "PAGADO" | "VENCIDO" | "ANULADO";
+  active: boolean;
+  createdAt: string;
+}

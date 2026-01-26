@@ -6,6 +6,7 @@ import { EnrollmentService } from "@/shared/services/api/enrollmentService";
 import { CampusService } from "@/shared/services/api/campusService";
 import { PlanService } from "@/shared/services/api/planService";
 import { PaymentService } from "@/shared/services/api/paymentService";
+import { DebtService } from "@/shared/services/api/debtService";
 import {
   Loader2,
   X,
@@ -25,7 +26,9 @@ import {
   EnrollmentResponse,
   Campus,
   Plan,
+  Plan,
   PaymentResponse,
+  DebtResponse,
 } from "@/features/matriculas/models/EnrollmentModels";
 
 interface AlumnoDetalleProps {
@@ -47,6 +50,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
   const [campus, setCampus] = useState<Campus | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [payments, setPayments] = useState<PaymentResponse[]>([]);
+  const [debts, setDebts] = useState<DebtResponse[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(true);
 
   // Resolved names for display
@@ -85,8 +89,9 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
         const activeEnrollment = enrollments[enrollments.length - 1]; // Use latest
         setEnrollment(activeEnrollment);
 
-        const [paymentsData, campuses, plans] = await Promise.all([
+        const [paymentsData, debtsData, campuses, plans] = await Promise.all([
           PaymentService.getByEnrollmentId(activeEnrollment.id),
+          DebtService.getByEnrollmentId(activeEnrollment.id),
           CampusService.getAll(),
           PlanService.getAll(),
         ]);
@@ -101,6 +106,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
               new Date(b.fechaPago).getTime() - new Date(a.fechaPago).getTime(),
           ),
         );
+        setDebts(debtsData);
 
         // Resolve names based on enrollmentType
         if (activeEnrollment.enrollmentType === "PLAN") {
@@ -175,6 +181,8 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
     observaciones: [],
   };
 
+  const totalSaldo = debts.reduce((sum, d) => sum + Number(d.monto), 0);
+
   return (
     <div className={styles.container}>
       <button className={styles.backButton} onClick={onBack}>
@@ -208,7 +216,7 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
           <p className={styles.subtitle}>
             ID Estudiante: {alumno.dni} |{" "}
             {enrollment
-              ? `Próximo pago: ${enrollment.saldo > 0 ? "Pendiente" : "Al día"}`
+              ? `Próximo pago: ${totalSaldo > 0 ? "Pendiente" : "Al día"}`
               : "Sin matrícula activa"}
           </p>
         </div>
@@ -758,13 +766,32 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
               <div className={styles.metricCard}>
                 <span className={styles.infoLabel}>Saldo Pendiente</span>
                 <div className={styles.metricValue}>
-                  {enrollment
-                    ? `S/. ${enrollment.saldo.toFixed(2)}`
-                    : "S/. 0,00"}
+                  S/. {totalSaldo.toFixed(2)}
                 </div>
                 <span className={styles.caption}>Matrícula Vigente</span>
               </div>
             </div>
+
+            {debts.length > 0 && (
+              <div className={styles.debtsBreakdown}>
+                <h4 className={styles.breakdownTitle}>Saldos por concepto</h4>
+                <div className={styles.breakdownList}>
+                  {debts.map((d) => (
+                    <div key={d.id} className={styles.breakdownItem}>
+                      <span className={styles.breakdownConcept}>
+                        {d.concepto || d.tipoDeuda}
+                        {d.estado === "PAGADO_PARCIAL" && (
+                          <span className={styles.partialBadge}>Parcial</span>
+                        )}
+                      </span>
+                      <span className={styles.breakdownAmount}>
+                        S/. {Number(d.monto).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className={styles.paymentsTableArea}>
               <h3>Últimos Pagos</h3>

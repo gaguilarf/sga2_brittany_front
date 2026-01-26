@@ -42,6 +42,7 @@ export const useMatricula = () => {
   const [cycles, setCycles] = useState<Cycle[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [campusPrices, setCampusPrices] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     // Step 1: Estudiante
@@ -114,6 +115,52 @@ export const useMatricula = () => {
     >,
   ) => {
     const { name, value } = e.target;
+
+    // Trigger price fetch when campus changes
+    if (name === "campusId" && value) {
+      PlanService.getPricesByCampus(parseInt(value)).then((res) => {
+        setCampusPrices(res);
+      });
+    }
+
+    // Auto-fill payments when plan changes
+    if (name === "planId" && value) {
+      const planId = parseInt(value);
+      const config = campusPrices.find((cp) => cp.planId === planId);
+
+      if (config) {
+        const suggestedPayments: Array<{
+          tipo: string;
+          metodo: string;
+          monto: string;
+        }> = [];
+
+        if (!isExistingStudent) {
+          suggestedPayments.push({
+            tipo: "Inscripción",
+            metodo: "",
+            monto: config.precioInscripcion.toString(),
+          });
+          suggestedPayments.push({
+            tipo: "Materiales",
+            metodo: "",
+            monto: config.precioMateriales.toString(),
+          });
+        }
+
+        suggestedPayments.push({
+          tipo: "Mensualidad",
+          metodo: "",
+          monto: config.precioMensualidad.toString(),
+        });
+
+        setFormData((prev) => ({
+          ...prev,
+          planId: value,
+          payments: suggestedPayments,
+        }));
+      }
+    }
 
     if (errors[name]) {
       const newErrors = { ...errors };
@@ -362,9 +409,28 @@ export const useMatricula = () => {
   const handlePaymentChange = (index: number, field: string, value: string) => {
     setFormData((prev) => {
       const updatedPayments = [...prev.payments];
+      let updatedMonto = updatedPayments[index].monto;
+
+      // if tipo changes, find and set the price automatically
+      if (field === "tipo" && value && prev.planId) {
+        const planId = parseInt(prev.planId);
+        const config = campusPrices.find((cp) => cp.planId === planId);
+
+        if (config) {
+          if (value === "Inscripción") {
+            updatedMonto = config.precioInscripcion.toString();
+          } else if (value === "Materiales") {
+            updatedMonto = config.precioMateriales.toString();
+          } else if (value === "Mensualidad") {
+            updatedMonto = config.precioMensualidad.toString();
+          }
+        }
+      }
+
       updatedPayments[index] = {
         ...updatedPayments[index],
         [field]: value,
+        monto: updatedMonto,
       };
       return { ...prev, payments: updatedPayments };
     });

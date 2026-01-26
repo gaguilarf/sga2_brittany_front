@@ -11,4 +11,9 @@ export const PlanService = {
     const res = await apiClient.get<Plan[]>("/plans/active");
     return res.data || [];
   },
+
+  async getPricesByCampus(campusId: number): Promise<any[]> {
+    const res = await apiClient.get<any[]>(`/plans/prices/campus/${campusId}`);
+    return res.data || [];
+  },
 };

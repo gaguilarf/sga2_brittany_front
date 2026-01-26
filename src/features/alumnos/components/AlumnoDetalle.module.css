@@ -791,3 +791,61 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Debts Breakdown */
+.debtsBreakdown {
+  padding: 1rem 1.5rem;
+  background: #fffafa;
+  border-top: 1px solid #fee2e2;
+}
+
+.breakdownTitle {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+  margin-bottom: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.breakdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.breakdownItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid #fee2e2;
+}
+
+.breakdownConcept {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-blue-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.breakdownAmount {
+  font-weight: 700;
+  color: #ef4444;
+  font-size: 0.95rem;
+}
+
+.partialBadge {
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #ffedd5;
+  text-transform: uppercase;
+  font-weight: 800;
+}
