@@ -31,7 +31,7 @@ export const useMatricula = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [enrollmentFlow, setEnrollmentFlow] = useState<
     "selection" | "new" | "existing"
-  >("selection");
+  >("new");
   const [isExistingStudent, setIsExistingStudent] = useState(false);
 
   // Static data
@@ -357,7 +357,7 @@ export const useMatricula = () => {
   };
 
   const resetFlow = () => {
-    setEnrollmentFlow("selection");
+    setEnrollmentFlow("new");
     setIsExistingStudent(false);
     setCurrentStep(1);
     setSelectedStudent(null);
