@@ -214,8 +214,11 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
     observaciones: [],
   };
 
-  // Filter out fully paid debts
-  const pendingDebts = debts.filter((d) => d.estado !== "PAGADO");
+  // Filter for economic summary display
+  const pendingDebts = debts.filter(
+    (d) => d.estado !== "PAGADO" && d.estado !== "ANULADO",
+  );
+  const paidDebts = debts.filter((d) => d.estado === "PAGADO");
   const totalSaldo = pendingDebts.reduce((sum, d) => sum + Number(d.monto), 0);
 
   return (
@@ -858,20 +861,76 @@ const AlumnoDetalle: React.FC<AlumnoDetalleProps> = ({
               </div>
             </div>
 
-            {pendingDebts.length > 0 && (
+            {(pendingDebts.length > 0 || paidDebts.length > 0) && (
               <div className={styles.debtsBreakdown}>
-                <h4 className={styles.breakdownTitle}>Deudas por concepto</h4>
+                <h4 className={styles.breakdownTitle}>Resumen Económico</h4>
                 <div className={styles.breakdownList}>
+                  {/* Pending Debts */}
                   {pendingDebts.map((d) => (
                     <div key={d.id} className={styles.breakdownItem}>
                       <span className={styles.breakdownConcept}>
-                        {d.concepto || d.tipoDeuda}
+                        {d.concepto || d.tipoDeuda}{" "}
+                        {d.mesAplicado ? `(${d.mesAplicado})` : ""}
                         {d.estado === "PAGADO_PARCIAL" && (
                           <span className={styles.partialBadge}>Parcial</span>
+                        )}
+                        {d.estado === "VENCIDO" && (
+                          <span
+                            className={styles.vencidoBadge}
+                            style={{
+                              backgroundColor: "#fef2f2",
+                              color: "#ef4444",
+                              fontSize: "0.7rem",
+                              padding: "2px 6px",
+                              borderRadius: "10px",
+                              marginLeft: "8px",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Vencido
+                          </span>
                         )}
                       </span>
                       <span className={styles.breakdownAmount}>
                         S/. {Number(d.monto).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  {/* Paid Debts */}
+                  {paidDebts.map((d) => (
+                    <div
+                      key={d.id}
+                      className={styles.breakdownItem}
+                      style={{ opacity: 0.8 }}
+                    >
+                      <span className={styles.breakdownConcept}>
+                        {d.concepto || d.tipoDeuda}{" "}
+                        {d.mesAplicado ? `(${d.mesAplicado})` : ""}
+                        <span
+                          style={{
+                            backgroundColor: "#ecfdf5",
+                            color: "#10b981",
+                            fontSize: "0.7rem",
+                            padding: "2px 6px",
+                            borderRadius: "10px",
+                            marginLeft: "8px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Pagado
+                        </span>
+                      </span>
+                      <span
+                        className={styles.breakdownAmount}
+                        style={{
+                          color: "#10b981",
+                          textDecoration: "line-through",
+                        }}
+                      >
+                        S/.{" "}
+                        {Number(d.monto).toFixed(2) === "0.00"
+                          ? "-"
+                          : Number(d.monto).toFixed(2)}
                       </span>
                     </div>
                   ))}
